@@ -276,9 +276,194 @@
   @media (prefers-reduced-motion: reduce){
     .stamp,.route-line,.info-pop,.term .tip{transition:none;}
   }
+
+  /* ================= Submission Desk ================= */
+  .protolab-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .protolab-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;}
+
+  .sd-gate{max-width:420px;margin:60px auto;background:var(--paper-raised);border:1px solid var(--line);border-radius:12px;padding:28px 26px;box-shadow:0 2px 10px var(--shadow);}
+  .sd-gate h1{font-size:22px;margin-bottom:4px;}
+  .sd-gate p{font-size:13px;color:var(--ink-soft);margin:0 0 18px;}
+  .sd-gate .field{margin-bottom:12px;}
+  .sd-gate .field label{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;margin-bottom:4px;}
+  .sd-gate .field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:14px;}
+  .btn-primary{background:var(--seal);color:#fff;border:none;border-radius:7px;padding:11px 18px;font-size:13.5px;font-weight:700;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-soft);border-radius:7px;padding:9px 14px;font-size:13px;font-weight:600;}
+  .btn-ghost:hover{border-color:var(--ink-soft);color:var(--ink);}
+  .sd-err{color:var(--seal);font-size:12.5px;margin-top:8px;min-height:1em;}
+  .sd-demo-link{display:block;text-align:center;margin-top:14px;font-size:12px;color:var(--ink-faint);background:none;border:none;text-decoration:underline;cursor:pointer;}
+
+  .sd-shell{display:flex;flex-direction:column;gap:18px;}
+  .sd-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:var(--paper-raised);border:1px solid var(--line);border-radius:10px;padding:12px 18px;box-shadow:0 2px 10px var(--shadow);}
+  .sd-brand{display:flex;flex-direction:column;}
+  .sd-brand strong{font-family:var(--font-display);font-size:17px;}
+  .sd-brand span{font-size:11px;color:var(--ink-faint);}
+  .sd-who{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-soft);}
+  .sd-who strong{color:var(--ink);}
+  .sd-nav{display:flex;gap:8px;flex-wrap:wrap;}
+  .sd-navbtn{background:var(--paper-sunk);border:1px solid var(--line);color:var(--ink-soft);border-radius:8px;padding:9px 14px;font-size:12.5px;font-weight:600;}
+  .sd-navbtn.active{background:var(--seal);border-color:var(--seal);color:#fff;}
+
+  .sd-view{display:none;flex-direction:column;gap:18px;}
+  .sd-view.active{display:flex;}
+
+  .sd-card{background:var(--paper-raised);border:1px solid var(--line);border-radius:10px;padding:18px 20px;box-shadow:0 2px 10px var(--shadow);}
+  .sd-card h2{font-size:16.5px;margin-bottom:10px;}
+  .sd-card h3{font-size:13.5px;margin:0 0 8px;}
+
+  .sd-cutoff-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-radius:10px;padding:12px 18px;font-size:13px;font-weight:600;border:1px solid var(--ok-line);background:var(--ok-soft);color:var(--ok);}
+  .sd-cutoff-banner.warn{border-color:var(--brass-line);background:var(--brass-soft);color:var(--brass-ink);}
+  .sd-cutoff-banner.past{border-color:var(--seal-line);background:var(--seal-soft);color:var(--seal);}
+  .sd-cutoff-banner .mono{font-size:14px;}
+
+  .sd-steps{display:flex;gap:0;flex-wrap:wrap;margin-bottom:4px;}
+  .sd-step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:90px;}
+  .sd-step .stamp{cursor:pointer;}
+  .sd-step span{font-size:10.5px;text-align:center;font-weight:600;color:var(--ink-soft);}
+  .sd-step.active span{color:var(--seal);}
+
+  .sd-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media (max-width:760px){ .sd-picker{grid-template-columns:1fr 1fr;} }
+  @media (max-width:480px){ .sd-picker{grid-template-columns:1fr;} }
+  .sd-pickitem{text-align:left;background:var(--paper-sunk);border:1px solid var(--line);border-radius:9px;padding:14px;font-size:13px;font-weight:600;color:var(--ink);display:flex;flex-direction:column;gap:4px;}
+  .sd-pickitem span{font-size:11px;font-weight:500;color:var(--ink-faint);}
+  .sd-pickitem.selected{border-color:var(--seal);background:var(--seal-soft);color:var(--seal);}
+  .sd-pickitem.selected span{color:var(--seal);}
+
+  .sd-list{display:flex;flex-direction:column;gap:10px;}
+  .sd-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--paper-sunk);border:1px solid var(--line);border-radius:9px;padding:12px 16px;}
+  .sd-row-main{flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px;}
+  .sd-row-main strong{font-size:13.5px;}
+  .sd-row-main span{font-size:11.5px;color:var(--ink-faint);}
+  .sd-row-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+
+  .sla-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;}
+  .sla-dot.green{background:var(--ok);}
+  .sla-dot.amber{background:var(--brass);}
+  .sla-dot.red{background:var(--seal);}
+  .sla-label{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+  .sla-label.green{color:var(--ok);}
+  .sla-label.amber{color:var(--brass-ink);}
+  .sla-label.red{color:var(--seal);}
+
+  .sd-status-pill{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:12px;padding:3px 10px;background:var(--paper-raised);border:1px solid var(--line);color:var(--ink-soft);}
+  .sd-status-pill.ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok);}
+  .sd-status-pill.warn{background:var(--brass-soft);border-color:var(--brass-line);color:var(--brass-ink);}
+  .sd-status-pill.flag{background:var(--seal-soft);border-color:var(--seal-line);color:var(--seal);}
+
+  .sd-timeline{display:flex;flex-direction:column;gap:0;margin-top:8px;}
+  .sd-tl-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px;}
+  .sd-tl-item:last-child{border-bottom:none;}
+  .sd-tl-item time{color:var(--ink-faint);white-space:nowrap;font-family:var(--font-mono);font-size:11px;min-width:120px;}
+  .sd-tl-item .who{font-weight:700;margin-right:6px;}
+
+  .sd-stale{color:var(--seal);font-weight:700;}
+
+  .sd-empty{text-align:center;padding:40px 20px;color:var(--ink-faint);font-size:13px;}
+
+  table.sd-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.sd-table th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);padding:6px 10px;border-bottom:1px solid var(--line);}
+  table.sd-table td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  table.sd-table tr:last-child td{border-bottom:none;}
+
+  .sd-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;}
+  .sd-metric{background:var(--paper-sunk);border:1px solid var(--line);border-radius:9px;padding:14px;text-align:center;}
+  .sd-metric strong{display:block;font-size:24px;font-family:var(--font-display);}
+  .sd-metric span{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;}
+
+  .sd-settings-row{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .sd-settings-row label{font-size:12.5px;font-weight:600;}
+  .sd-settings-row input, .sd-settings-row select, .sd-settings-row textarea{padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper-sunk);color:var(--ink);font-size:13px;width:100%;}
 </style>
 
 <div class="app">
+
+  <div id="sdRoot">
+
+    <div class="sd-gate" id="sdGate">
+      <h1>genAssist Submission Desk</h1>
+      <p>Sign in with your agent code and PIN to continue.</p>
+      <div class="field"><label>Agent code</label><input type="text" id="sdLoginCode" autocomplete="username"></div>
+      <div class="field"><label>PIN</label><input type="password" id="sdLoginPin" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
+      <button class="btn-primary" id="sdLoginBtn" style="width:100%;">Sign in &rarr;</button>
+      <div class="sd-err" id="sdLoginErr"></div>
+      <button class="sd-demo-link" id="sdDemoLoginLink" type="button">Just exploring? Sign in as the demo agent</button>
+    </div>
+
+    <div class="sd-shell" id="sdShell" style="display:none;">
+
+      <div class="sd-topbar">
+        <div class="sd-brand">genAssist &mdash; Submission Desk</div>
+        <div class="sd-nav" id="sdNav"></div>
+        <div class="sd-who" id="sdWho"></div>
+      </div>
+
+      <div class="sd-view" id="sdView-newsub">
+        <div class="sd-card"><div id="sdWizardSteps"></div></div>
+        <div id="sdWizardBody"></div>
+      </div>
+
+      <div class="sd-view" id="sdView-myfiles">
+        <div class="sd-card">
+          <h2>My Files</h2>
+          <p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 12px;">Everything you've submitted, with live status and the business-hours SLA clock.</p>
+          <div id="sdMyFilesList" class="sd-list"></div>
+        </div>
+        <div class="sd-card" id="sdMyFileDetailCard" style="display:none;"></div>
+      </div>
+
+      <div class="sd-view" id="sdView-queue">
+        <div class="sd-card">
+          <h2>Back-office Queue</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;" id="sdQueueFilters"></div>
+          <div id="sdQueueList" class="sd-list"></div>
+        </div>
+        <div class="sd-card" id="sdQueueDetailCard" style="display:none;"></div>
+      </div>
+
+      <div class="sd-view" id="sdView-admin">
+        <div class="sd-card">
+          <h2>Admin Dashboard</h2>
+          <div class="sd-metrics" id="sdAdminMetrics"></div>
+        </div>
+        <div class="sd-card">
+          <h3>Log an off-system submission</h3>
+          <p style="font-size:12px;color:var(--ink-faint);margin:-4px 0 10px;">For anything that still came in by WhatsApp, email, or paper &mdash; so it's counted and tracked here too.</p>
+          <div id="sdOffSystemForm"></div>
+        </div>
+        <div class="sd-card">
+          <h3>Export</h3>
+          <button class="btn-ghost" id="sdExportCsvBtn">&darr; Export all submissions as CSV</button>
+        </div>
+      </div>
+
+      <div class="sd-view" id="sdView-settings">
+        <div class="sd-card">
+          <h2>Settings</h2>
+          <div id="sdSettingsForm"></div>
+        </div>
+        <div class="sd-card">
+          <h3>Agents</h3>
+          <p style="font-size:12px;color:var(--ink-faint);margin:-4px 0 10px;">Managed in the Agents tab of the Google Sheet &mdash; shown here read-only. See SETUP.md, step 6.</p>
+          <div id="sdAgentsList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="sdModal">
+    <div class="modal-box">
+      <h3 id="sdModalTitle" style="margin-bottom:10px;"></h3>
+      <div id="sdModalBody"></div>
+      <div id="sdModalBtns" style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;"></div>
+    </div>
+  </div>
+
+  <div id="protoLab" style="display:none">
+  <div class="protolab-topbar"><button class="btn-autofill" id="protoLabBack">&larr; Back to Submission Desk</button><span class="protolab-label">Form Library &amp; AI explainer &mdash; reference / training mode</span></div>
 
   <div class="caseband">
     <div class="case-id">
@@ -2407,6 +2592,7 @@
       </details>
     </aside>
   </div>
+  </div>
 
   <div class="modal-overlay" id="exportModal">
     <div class="modal-box">
@@ -2454,6 +2640,8 @@
     motor: {
       label: 'Motor',
       formTab: 'motorproposal',
+      formPanelId: 'form-motorproposal',
+      readyTextId: 'mp-readyText',
       cutoffApplies: true,
       requiredDocs: [
         'Valid ID (driver’s licence or national ID)',
@@ -2466,6 +2654,8 @@
     property_residential: {
       label: 'Property — Residential (Homesure)',
       formTab: 'homesure',
+      formPanelId: 'form-homesure',
+      readyTextId: 'hs-readyText',
       cutoffApplies: true,
       requiredDocs: [
         'Valid ID',
@@ -2478,6 +2668,8 @@
     property_commercial: {
       label: 'Property — Commercial (Fire Insurance)',
       formTab: 'fireproposal',
+      formPanelId: 'form-fireproposal',
+      readyTextId: 'fp-readyText',
       cutoffApplies: true,
       requiredDocs: [
         'Valid ID / company registration',
@@ -2489,6 +2681,8 @@
     covercare_new: {
       label: 'Covercare — New Application',
       formTab: 'ccproposal',
+      formPanelId: 'form-ccproposal',
+      readyTextId: 'ccpReadyText',
       cutoffApplies: true,
       requiredDocs: [
         'Copy of ID',
@@ -2503,6 +2697,8 @@
     covercare_conversion: {
       label: 'Covercare — Existing Member Conversion',
       formTab: 'covercare',
+      formPanelId: 'form-covercare',
+      readyTextId: 'ccReadyText',
       cutoffApplies: true,
       requiredDocs: [
         'Copy of ID',
@@ -2521,6 +2717,8 @@
     change: {
       label: 'Change in Policy',
       formTab: 'change',
+      formPanelId: 'form-change',
+      readyTextId: 'chgReadyText',
       cutoffApplies: true,
       requiredDocs: [
         'Valid ID',
@@ -2541,6 +2739,8 @@
     claims_motor: {
       label: 'Claims — Motor',
       formTab: 'motorclaim',
+      formPanelId: 'form-motorclaim',
+      readyTextId: 'mc-readyText',
       cutoffApplies: false, // pinned: revisit once claims routing/SLA rules are confirmed
       requiredDocs: [
         'Completed & signed Motor Vehicle Accident Report form',
@@ -2553,6 +2753,8 @@
     claims_property: {
       label: 'Claims — Property',
       formTab: 'propertyclaim',
+      formPanelId: 'form-propertyclaim',
+      readyTextId: 'pc-readyText',
       cutoffApplies: false, // pinned: revisit once claims routing/SLA rules are confirmed
       requiredDocs: [
         'Completed & signed Loss of or Damage to Property Claim form',
@@ -2857,6 +3059,844 @@
     store.events = [];
     sdSaveStore(store);
   }
+
+  // ================================================================
+  // genAssist Submission Desk — UI layer. Everything below talks
+  // only to `dataLayer` (defined above) — swapping SD_CONFIG.backend
+  // from 'local' to 'appsscript' doesn't require touching any of it.
+  // ================================================================
+
+  var SD_SESSION_KEY = 'genassist_sd_session';
+  var sdSession = null;
+  var sdSettingsCache = Object.assign({}, SD_DEFAULT_SETTINGS);
+  var sdCurrentView = null;
+  var sdAllSubsCache = [];
+
+  function sdEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function sdFmtDateTime(iso){
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ', ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+  function sdFmtMinutes(mins){
+    var sign = mins < 0 ? '-' : '';
+    mins = Math.abs(Math.round(mins));
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return sign + (h ? h + 'h ' : '') + m + 'm';
+  }
+  function sdSaveSession(s){ sdSession = s; try { localStorage.setItem(SD_SESSION_KEY, JSON.stringify(s)); } catch (e) {} }
+  function sdClearSessionStorage(){ try { localStorage.removeItem(SD_SESSION_KEY); } catch (e) {} }
+  function sdLoadSessionFromStorage(){
+    try { var raw = localStorage.getItem(SD_SESSION_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    return null;
+  }
+
+  // ---- generic modal (confirmations, message-client previews, off-system log, etc.) ----
+  function sdShowModal(title, bodyHtml, buttons){
+    document.getElementById('sdModalTitle').textContent = title;
+    document.getElementById('sdModalBody').innerHTML = bodyHtml;
+    var btnWrap = document.getElementById('sdModalBtns');
+    btnWrap.innerHTML = '';
+    (buttons || []).forEach(function(b){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = b.primary ? 'btn-primary' : 'btn-ghost';
+      btn.textContent = b.label;
+      btn.addEventListener('click', b.onClick);
+      btnWrap.appendChild(btn);
+    });
+    document.getElementById('sdModal').classList.add('show');
+    return document.getElementById('sdModalBody');
+  }
+  function sdCloseModal(){ document.getElementById('sdModal').classList.remove('show'); }
+  document.getElementById('sdModal').addEventListener('click', function(e){ if (e.target === this) sdCloseModal(); });
+
+  // ---- Form Library (Proto Lab) open/close — reused by the wizard's "fill it out" step ----
+  var sdProtoLabReturn = null;
+  function sdOpenProtoLab(formTabId, returnMode){
+    sdProtoLabReturn = returnMode || null;
+    document.getElementById('sdRoot').style.display = 'none';
+    document.getElementById('protoLab').style.display = '';
+    if (formTabId) {
+      var tabBtn = document.querySelector('.formtab[data-form="' + formTabId + '"]');
+      if (tabBtn) tabBtn.click();
+    }
+    document.getElementById('protoLabBack').textContent = returnMode === 'wizard' ? '✓ Done — back to the submission wizard' : '← Back to Submission Desk';
+    window.scrollTo(0, 0);
+  }
+  document.getElementById('protoLabBack').addEventListener('click', function(){
+    document.getElementById('protoLab').style.display = 'none';
+    document.getElementById('sdRoot').style.display = '';
+    if (sdProtoLabReturn === 'wizard') { sdProtoLabReturn = null; sdWizardRenderStep(); }
+  });
+
+  // ---- generic form helpers: every field the schema engine or the
+  // older hand-built tabs render ends up as an <input>/<select> with
+  // an id (or a radio group `name`) inside its .formview panel, and
+  // every tab shows "X of Y key items checked." in a readiness
+  // element — so both flavours can be read the same way. ----
+  function sdFormReadiness(readyTextId){
+    if (!readyTextId) return { have: 0, need: 0, done: true };
+    var el = document.getElementById(readyTextId);
+    if (!el) return { have: 0, need: 0, done: true };
+    var m = /(\d+)\s+of\s+(\d+)/.exec(el.textContent || '');
+    if (!m) return { have: 0, need: 0, done: true };
+    var have = +m[1], need = +m[2];
+    return { have: have, need: need, done: have >= need };
+  }
+  function sdSerializeForm(formPanelId){
+    var data = {};
+    if (!formPanelId) return data;
+    var el = document.getElementById(formPanelId);
+    if (!el) return data;
+    el.querySelectorAll('input,select,textarea').forEach(function(f){
+      if (f.type === 'radio') { if (f.checked) data[f.name] = f.value; }
+      else if (f.type === 'checkbox') { data[f.id || f.name] = f.checked; }
+      else { data[f.id || f.name] = f.value; }
+    });
+    return data;
+  }
+
+  // ---- the same Agent -> CRM Record -> Branch GM -> Underwriting
+  // route visual already used elsewhere in this prototype, reused
+  // as the one status pipeline for every submission. ----
+  var SD_PIPELINE = [
+    { key: 'agent', status: 'Submitted', label: 'Agent' },
+    { key: 'crm', status: 'Acknowledged', label: 'CRM Record' },
+    { key: 'gm', status: 'GM Approval', label: 'Branch GM' },
+    { key: 'uw', status: 'Underwriting', label: 'Underwriting' }
+  ];
+  function sdActivePipeline(){
+    var gmOn = !!sdSettingsCache.gmApprovalRequired;
+    return SD_PIPELINE.filter(function(s){ return gmOn || s.key !== 'gm'; });
+  }
+  function sdRenderRoute(status){
+    var steps = sdActivePipeline();
+    var curIdx = steps.map(function(s){ return s.status; }).indexOf(status);
+    if (curIdx === -1) curIdx = (status === 'Needs Info') ? 1 : 0;
+    var html = '<div class="route">';
+    steps.forEach(function(s, i){
+      var done = i <= curIdx;
+      html += '<div class="route-step"><div class="stamp' + (done ? ' done' : '') + '">' + (done ? '&#10003;' : (i + 1)) + '</div><span>' + s.label + '</span></div>';
+      if (i < steps.length - 1) html += '<div class="route-line' + (i < curIdx ? ' done' : '') + '"></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+  function sdStatusPillClass(status){
+    if (status === 'Needs Info') return 'flag';
+    if (status === 'Underwriting') return 'ok';
+    return 'warn';
+  }
+
+  // ---- client update message templates (WhatsApp / email) ----
+  var SD_DEFAULT_TEMPLATES = {
+    acknowledged: "Hi {clientName}, this is ARAL confirming we've received your {product} submission (ref {refId}) and it's now being processed. We'll follow up if anything else is needed.",
+    needsInfo: "Hi {clientName}, we need a bit more information to keep processing your {product} submission (ref {refId}): {needsInfoText} Please send this across when you can so we can keep things moving.",
+    sentToUnderwriting: "Hi {clientName}, good news — your {product} submission (ref {refId}) has been sent to underwriting for review. We'll let you know as soon as we hear back.",
+    nudge: "Hi {clientName}, just checking in on your {product} submission (ref {refId}) — we're still working on it and wanted to keep you posted."
+  };
+  function sdGetTemplate(key){
+    var custom = (sdSettingsCache.messageTemplates || {})[key];
+    return custom || SD_DEFAULT_TEMPLATES[key];
+  }
+  function sdFillTemplate(tpl, sub, extra){
+    var rules = getProductRules(sdSettingsCache);
+    var vars = Object.assign({
+      clientName: sub.clientName || 'there',
+      product: (rules[sub.product] || {}).label || sub.product || '',
+      refId: sub.id,
+      status: sub.status,
+      nextAction: sub.nextAction || ''
+    }, extra || {});
+    return tpl.replace(/\{(\w+)\}/g, function(_, k){ return vars[k] != null ? vars[k] : ''; });
+  }
+  function sdWaLink(phone, text){
+    var digits = String(phone || '').replace(/[^\d]/g, '');
+    if (digits.length === 7) digits = '1868' + digits;
+    else if (digits.length === 10 && digits.slice(0, 3) === '868') digits = '1' + digits;
+    else if (digits.length === 8 && digits.slice(0, 1) === '0') digits = '1868' + digits.slice(1);
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
+  }
+  function sdMailLink(email, subject, body){
+    return 'mailto:' + encodeURIComponent(email || '') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
+  function sdMessageClientModal(sub, templateKey, extra){
+    var text = sdFillTemplate(sdGetTemplate(templateKey), sub, extra);
+    var body = '<div class="field"><label>Message preview (edit if you like)</label><textarea id="sdMsgPreview" rows="5" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;">' + sdEsc(text) + '</textarea></div>';
+    sdShowModal('Message ' + (sub.clientName || 'client'), body, [
+      { label: 'Close', onClick: sdCloseModal },
+      { label: 'Open email', onClick: function(){ window.open(sdMailLink(sub.clientEmail, 'Your ARAL submission ' + sub.id, document.getElementById('sdMsgPreview').value), '_blank'); } },
+      { label: 'Open WhatsApp', primary: true, onClick: function(){ window.open(sdWaLink(sub.clientPhone, document.getElementById('sdMsgPreview').value), '_blank'); } }
+    ]);
+  }
+  function sdIsStale(sub){
+    if (!sub || sub.status === 'Underwriting') return false;
+    var anchor = sub.updatedAt || sub.submittedAt;
+    if (!anchor) return false;
+    var threshold = new Date(anchor);
+    for (var i = 0; i < 3; i++) threshold = addBusinessHours(threshold, 24, sdSettingsCache);
+    return nowInTrinidad() > threshold;
+  }
+
+  // ---- sign-in gate ----
+  function sdDoLogin(code, pin){
+    var err = document.getElementById('sdLoginErr');
+    err.textContent = '';
+    if (!code || !pin) { err.textContent = 'Enter your agent code and PIN.'; return; }
+    dataLayer.authenticateAgent(code, pin).then(function(res){
+      if (!res || !res.ok) { err.textContent = (res && res.error) || 'Invalid code or PIN.'; return; }
+      sdSaveSession(res.agent);
+      sdEnterShell();
+    });
+  }
+  document.getElementById('sdLoginBtn').addEventListener('click', function(){
+    sdDoLogin(document.getElementById('sdLoginCode').value.trim(), document.getElementById('sdLoginPin').value.trim());
+  });
+  document.getElementById('sdLoginPin').addEventListener('keydown', function(e){ if (e.key === 'Enter') document.getElementById('sdLoginBtn').click(); });
+  document.getElementById('sdLoginCode').addEventListener('keydown', function(e){ if (e.key === 'Enter') document.getElementById('sdLoginPin').focus(); });
+  document.getElementById('sdDemoLoginLink').addEventListener('click', function(){ sdDoLogin('AG1', '2222'); });
+
+  function sdLogout(){
+    sdSession = null;
+    sdClearSessionStorage();
+    document.getElementById('sdShell').style.display = 'none';
+    document.getElementById('sdGate').style.display = '';
+    document.getElementById('sdLoginCode').value = '';
+    document.getElementById('sdLoginPin').value = '';
+    document.getElementById('sdLoginErr').textContent = '';
+  }
+
+  var SD_NAV_BY_ROLE = {
+    agent: [ { id: 'newsub', label: 'New Submission' }, { id: 'myfiles', label: 'My Files' } ],
+    backoffice: [ { id: 'queue', label: 'Queue' } ],
+    admin: [ { id: 'queue', label: 'Queue' }, { id: 'admin', label: 'Admin Dashboard' }, { id: 'settings', label: 'Settings' } ]
+  };
+  function sdRenderNav(){
+    var items = SD_NAV_BY_ROLE[sdSession.role] || [];
+    document.getElementById('sdNav').innerHTML = items.map(function(it){
+      return '<button type="button" class="sd-navbtn' + (sdCurrentView === it.id ? ' active' : '') + '" data-view="' + it.id + '">' + it.label + '</button>';
+    }).join('') + '<button type="button" class="sd-navbtn" id="sdNavFormLib">Form Library</button>';
+    document.querySelectorAll('#sdNav [data-view]').forEach(function(b){
+      b.addEventListener('click', function(){ sdGoToView(b.getAttribute('data-view')); });
+    });
+    document.getElementById('sdNavFormLib').addEventListener('click', function(){ sdOpenProtoLab(null, null); });
+  }
+  function sdGoToView(viewId){
+    sdCurrentView = viewId;
+    document.querySelectorAll('#sdShell .sd-view').forEach(function(v){ v.classList.remove('active'); });
+    var el = document.getElementById('sdView-' + viewId);
+    if (el) el.classList.add('active');
+    sdRenderNav();
+    if (viewId === 'newsub') sdWizardInit();
+    else if (viewId === 'myfiles') sdRenderMyFiles();
+    else if (viewId === 'queue') sdRenderQueue();
+    else if (viewId === 'admin') sdRenderAdmin();
+    else if (viewId === 'settings') sdRenderSettings();
+  }
+  function sdEnterShell(){
+    document.getElementById('sdGate').style.display = 'none';
+    document.getElementById('sdShell').style.display = '';
+    document.getElementById('sdWho').innerHTML = sdEsc(sdSession.name) + ' &middot; ' + sdEsc(sdSession.branch) + ' <button type="button" class="btn-ghost" id="sdLogoutBtn" style="margin-left:10px;padding:4px 10px;font-size:11px;">Sign out</button>';
+    document.getElementById('sdLogoutBtn').addEventListener('click', sdLogout);
+    dataLayer.getSettings().then(function(s){
+      sdSettingsCache = s;
+      var firstView = (SD_NAV_BY_ROLE[sdSession.role] || [{ id: 'newsub' }])[0].id;
+      sdGoToView(firstView);
+    });
+  }
+
+  // ================================================================
+  // Agent — New Submission wizard (4 steps)
+  // ================================================================
+  function sdWizardDraftKey(){ return 'genassist_sd_wizard_draft_' + (sdSession ? sdSession.code : 'anon'); }
+  function sdWizardBlank(){
+    return { step: 1, product: null, subtype: '', clientName: '', clientPhone: '', clientEmail: '', notes: '', docChecks: {}, documents: [] };
+  }
+  var sdWizard = sdWizardBlank();
+  var sdWizardDraftChecked = false;
+  function sdWizardSaveDraft(){ try { localStorage.setItem(sdWizardDraftKey(), JSON.stringify(sdWizard)); } catch (e) {} }
+  function sdWizardClearDraft(){ try { localStorage.removeItem(sdWizardDraftKey()); } catch (e) {} }
+  function sdWizardLoadDraft(){
+    try { var raw = localStorage.getItem(sdWizardDraftKey()); if (raw) return JSON.parse(raw); } catch (e) {}
+    return null;
+  }
+  function sdWizardInit(){
+    if (!sdWizardDraftChecked) {
+      sdWizardDraftChecked = true;
+      var draft = sdWizardLoadDraft();
+      if (draft && (draft.product || draft.clientName)) {
+        var rules = getProductRules(sdSettingsCache);
+        sdShowModal('Resume your submission?',
+          '<p style="font-size:13px;color:var(--ink-soft);">You have an unfinished submission in progress' + (draft.product && rules[draft.product] ? ' &mdash; ' + sdEsc(rules[draft.product].label) : '') + '.</p>',
+          [
+            { label: 'Discard & start fresh', onClick: function(){ sdWizardClearDraft(); sdWizard = sdWizardBlank(); sdCloseModal(); sdWizardRenderStep(); } },
+            { label: 'Resume', primary: true, onClick: function(){ sdWizard = draft; sdCloseModal(); sdWizardRenderStep(); } }
+          ]);
+        return;
+      }
+    }
+    sdWizardRenderStep();
+  }
+  function sdWizardStepsHtml(){
+    var labels = ['Type', 'Client & timing', 'Fill the form', 'Review & submit'];
+    var html = '<div class="route">';
+    labels.forEach(function(lab, i){
+      var n = i + 1, done = n < sdWizard.step, active = n === sdWizard.step;
+      html += '<div class="route-step"><div class="stamp' + (done ? ' done' : '') + '" style="' + (active ? 'border-color:var(--seal);color:var(--seal);' : '') + '">' + (done ? '&#10003;' : n) + '</div><span>' + lab + '</span></div>';
+      if (i < labels.length - 1) html += '<div class="route-line' + (done ? ' done' : '') + '"></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+  function sdWizardRenderStep(){
+    document.getElementById('sdWizardSteps').innerHTML = sdWizardStepsHtml();
+    var body = document.getElementById('sdWizardBody');
+    var rules = getProductRules(sdSettingsCache);
+
+    if (sdWizard.step === 1) {
+      body.innerHTML =
+        '<div class="sd-card"><h2>What are we submitting?</h2>' +
+        '<div class="sd-picker" id="sdPicker">' +
+        Object.keys(rules).map(function(key){
+          var r = rules[key];
+          return '<button type="button" class="sd-pickitem' + (sdWizard.product === key ? ' selected' : '') + '" data-product="' + key + '">' + sdEsc(r.label) + (r.cutoffApplies === false ? '<span>No same-day cutoff (pinned)</span>' : '<span>11:00 AM cutoff applies</span>') + '</button>';
+        }).join('') +
+        '</div></div>' +
+        '<div class="sd-card" style="display:flex;justify-content:flex-end;"><button class="btn-primary" id="sdWizNext1"' + (sdWizard.product ? '' : ' disabled') + '>Continue &rarr;</button></div>';
+      document.querySelectorAll('#sdPicker [data-product]').forEach(function(b){
+        b.addEventListener('click', function(){ sdWizard.product = b.getAttribute('data-product'); sdWizardSaveDraft(); sdWizardRenderStep(); });
+      });
+      var next1 = document.getElementById('sdWizNext1');
+      if (next1) next1.addEventListener('click', function(){ sdWizard.step = 2; sdWizardSaveDraft(); sdWizardRenderStep(); });
+      return;
+    }
+
+    if (sdWizard.step === 2) {
+      var pr = rules[sdWizard.product] || {};
+      var cutoffHtml = '';
+      if (pr.cutoffApplies) {
+        var passed = cutoffPassedToday(sdSettingsCache);
+        var mins = minutesUntilCutoff(sdSettingsCache);
+        var cls = passed ? 'past' : (mins <= 60 ? 'warn' : '');
+        var msg = passed
+          ? "Today's " + sdSettingsCache.cutoffTime + " cutoff has already passed — this will be queued for the next business day, but go ahead and submit it now."
+          : "Submit by " + sdSettingsCache.cutoffTime + " Trinidad time for same-day processing — " + sdFmtMinutes(mins) + ' left.';
+        cutoffHtml = '<div class="sd-cutoff-banner ' + cls + '" id="sdCutoffBanner"><span>' + msg + '</span><span class="mono" id="sdCutoffClock"></span></div>';
+      } else {
+        cutoffHtml = '<div class="sd-cutoff-banner"><span>No same-day cutoff applies to this submission type yet &mdash; claims routing/SLA rules for this type are still being finalised.</span></div>';
+      }
+      body.innerHTML =
+        cutoffHtml +
+        '<div class="sd-card"><h2>Client details</h2>' +
+        '<div class="grid2">' +
+        '<div class="field"><label>Client full name</label><input type="text" id="sdWizClientName" value="' + sdEsc(sdWizard.clientName) + '"></div>' +
+        '<div class="field"><label>Client phone (for WhatsApp updates)</label><input type="text" id="sdWizClientPhone" value="' + sdEsc(sdWizard.clientPhone) + '"></div>' +
+        '</div>' +
+        '<div class="grid2">' +
+        '<div class="field"><label>Client email (optional)</label><input type="text" id="sdWizClientEmail" value="' + sdEsc(sdWizard.clientEmail) + '"></div>' +
+        '<div class="field"><label>Subtype / cover notes (optional)</label><input type="text" id="sdWizSubtype" value="' + sdEsc(sdWizard.subtype) + '"></div>' +
+        '</div></div>' +
+        '<div class="sd-card" style="display:flex;justify-content:space-between;">' +
+        '<button class="btn-ghost" id="sdWizBack2">&larr; Back</button>' +
+        '<button class="btn-primary" id="sdWizNext2">Continue &rarr;</button>' +
+        '</div>';
+      ['sdWizClientName', 'sdWizClientPhone', 'sdWizClientEmail', 'sdWizSubtype'].forEach(function(id){
+        document.getElementById(id).addEventListener('input', function(){
+          sdWizard.clientName = document.getElementById('sdWizClientName').value;
+          sdWizard.clientPhone = document.getElementById('sdWizClientPhone').value;
+          sdWizard.clientEmail = document.getElementById('sdWizClientEmail').value;
+          sdWizard.subtype = document.getElementById('sdWizSubtype').value;
+          sdWizardSaveDraft();
+        });
+      });
+      document.getElementById('sdWizBack2').addEventListener('click', function(){ sdWizard.step = 1; sdWizardSaveDraft(); sdWizardRenderStep(); });
+      document.getElementById('sdWizNext2').addEventListener('click', function(){
+        if (!sdWizard.clientName.trim() || !sdWizard.clientPhone.trim()) { sdShowModal('Missing client details', '<p>Client name and phone number are both needed before continuing.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]); return; }
+        sdWizard.step = 3; sdWizardSaveDraft(); sdWizardRenderStep();
+      });
+      if (pr.cutoffApplies) {
+        if (window.sdCutoffTimer) clearInterval(window.sdCutoffTimer);
+        window.sdCutoffTimer = setInterval(function(){
+          var clock = document.getElementById('sdCutoffClock');
+          if (!clock) { clearInterval(window.sdCutoffTimer); return; }
+          clock.textContent = sdFmtMinutes(minutesUntilCutoff(sdSettingsCache)) + ' to go';
+        }, 15000);
+      }
+      return;
+    }
+
+    if (sdWizard.step === 3) {
+      var pr3 = rules[sdWizard.product] || {};
+      var ready = sdFormReadiness(pr3.readyTextId);
+      var formSection = pr3.formPanelId
+        ? ('<div class="sd-card"><h3>Fill in the ' + sdEsc(pr3.label) + ' form with the client</h3>' +
+           '<p style="font-size:12.5px;color:var(--ink-soft);">This opens the real TATIL form &mdash; everything typed there is saved directly into this submission.</p>' +
+           '<button class="btn-autofill" id="sdWizOpenForm">&#8594; Open the form</button>' +
+           '<p style="font-size:12.5px;margin-top:10px;" id="sdWizFormReadyText">' + (ready.need ? (ready.have + ' of ' + ready.need + ' key items checked.') : '') + '</p></div>')
+        : ('<div class="sd-card"><h3>Notes for back office</h3>' +
+           '<div class="field"><label>Describe what is needed</label><textarea id="sdWizNotes" rows="4" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;">' + sdEsc(sdWizard.notes) + '</textarea></div></div>');
+      var docsSection = (pr3.requiredDocs && pr3.requiredDocs.length)
+        ? ('<div class="sd-card"><h3>Required documents</h3><div class="checklist" id="sdWizDocChecklist">' +
+           pr3.requiredDocs.map(function(doc, i){
+             return '<label class="checkitem"><input type="checkbox" data-docidx="' + i + '"' + (sdWizard.docChecks[i] ? ' checked' : '') + '> ' + sdEsc(doc) + '</label>';
+           }).join('') +
+           '</div>' +
+           '<div class="qb-dropzone" id="sdWizDropzone" tabindex="0" role="button" aria-label="Attach documents"><div class="qb-dropzone-icon">&#128206;</div><div>Click to attach photos or scans of the above</div><div class="qb-dropzone-hint">JPEG, PNG or PDF</div></div>' +
+           '<input type="file" id="sdWizFileInput" multiple accept="image/*,application/pdf" style="display:none;">' +
+           '<div class="qb-thumbs" id="sdWizThumbs"></div>' +
+           '</div>')
+        : '';
+      body.innerHTML = formSection + docsSection +
+        '<div class="sd-card" style="display:flex;justify-content:space-between;">' +
+        '<button class="btn-ghost" id="sdWizBack3">&larr; Back</button>' +
+        '<button class="btn-primary" id="sdWizNext3">Continue to review &rarr;</button>' +
+        '</div>';
+      if (pr3.formPanelId) {
+        document.getElementById('sdWizOpenForm').addEventListener('click', function(){ sdOpenProtoLab(pr3.formTab, 'wizard'); });
+      } else {
+        document.getElementById('sdWizNotes').addEventListener('input', function(){ sdWizard.notes = this.value; sdWizardSaveDraft(); });
+      }
+      if (pr3.requiredDocs && pr3.requiredDocs.length) {
+        document.querySelectorAll('#sdWizDocChecklist input').forEach(function(cb){
+          cb.addEventListener('change', function(){ sdWizard.docChecks[this.getAttribute('data-docidx')] = this.checked; sdWizardSaveDraft(); });
+        });
+        var dz = document.getElementById('sdWizDropzone');
+        var fi = document.getElementById('sdWizFileInput');
+        dz.addEventListener('click', function(){ fi.click(); });
+        dz.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fi.click(); } });
+        fi.addEventListener('change', function(){ sdWizardAddFiles(this.files); this.value = ''; });
+        sdWizardRenderThumbs();
+      }
+      document.getElementById('sdWizBack3').addEventListener('click', function(){ sdWizard.step = 2; sdWizardSaveDraft(); sdWizardRenderStep(); });
+      document.getElementById('sdWizNext3').addEventListener('click', function(){
+        var r = sdFormReadiness(pr3.readyTextId);
+        if (pr3.formPanelId && !r.done) { sdShowModal('Form not finished yet', '<p>Only ' + r.have + ' of ' + r.need + ' key items on the ' + sdEsc(pr3.label) + ' form are filled in. Open the form and finish those before continuing.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]); return; }
+        if (!pr3.formPanelId && !sdWizard.notes.trim()) { sdShowModal('Add a note', '<p>Describe what is needed for back office before continuing.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]); return; }
+        sdWizard.step = 4; sdWizardSaveDraft(); sdWizardRenderStep();
+      });
+      return;
+    }
+
+    if (sdWizard.step === 4) {
+      var pr4 = rules[sdWizard.product] || {};
+      var checkedDocs = (pr4.requiredDocs || []).filter(function(_, i){ return sdWizard.docChecks[i]; }).length;
+      body.innerHTML =
+        '<div class="sd-card"><h2>Review &amp; submit</h2>' +
+        '<table class="sd-table"><tbody>' +
+        '<tr><th>Type</th><td>' + sdEsc(pr4.label) + (sdWizard.subtype ? ' &mdash; ' + sdEsc(sdWizard.subtype) : '') + '</td></tr>' +
+        '<tr><th>Client</th><td>' + sdEsc(sdWizard.clientName) + ' &middot; ' + sdEsc(sdWizard.clientPhone) + (sdWizard.clientEmail ? ' &middot; ' + sdEsc(sdWizard.clientEmail) : '') + '</td></tr>' +
+        '<tr><th>Documents</th><td>' + checkedDocs + ' of ' + (pr4.requiredDocs || []).length + ' checked off &middot; ' + sdWizard.documents.length + ' file(s) attached</td></tr>' +
+        '<tr><th>Cutoff</th><td>' + (pr4.cutoffApplies ? (cutoffPassedToday(sdSettingsCache) ? "Past today's cutoff — queued for next business day" : 'Within cutoff — same-day processing') : 'No cutoff tracked for this type yet') + '</td></tr>' +
+        '</tbody></table></div>' +
+        '<div class="sd-card" style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<button class="btn-ghost" id="sdWizBack4">&larr; Back</button>' +
+        '<button class="btn-primary" id="sdWizSubmit">Submit &rarr;</button>' +
+        '</div>';
+      document.getElementById('sdWizBack4').addEventListener('click', function(){ sdWizard.step = 3; sdWizardSaveDraft(); sdWizardRenderStep(); });
+      document.getElementById('sdWizSubmit').addEventListener('click', sdWizardSubmit);
+      return;
+    }
+  }
+  function sdWizardAddFiles(fileList){
+    Array.prototype.forEach.call(fileList, function(file){
+      var reader = new FileReader();
+      reader.onload = function(){
+        sdWizard.documents.push({ name: file.name, mime: file.type, dataUrl: reader.result });
+        sdWizardSaveDraft();
+        sdWizardRenderThumbs();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  function sdWizardRenderThumbs(){
+    var wrap = document.getElementById('sdWizThumbs');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    sdWizard.documents.forEach(function(doc, i){
+      var div = document.createElement('div');
+      div.className = 'qb-thumb';
+      var isImg = /^image\//.test(doc.mime || '');
+      div.innerHTML = (isImg ? '<img src="' + doc.dataUrl + '" alt="">' : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;padding:4px;text-align:center;">' + sdEsc(doc.name) + '</div>') + '<button type="button" aria-label="Remove">&times;</button>';
+      div.querySelector('button').addEventListener('click', function(){ sdWizard.documents.splice(i, 1); sdWizardSaveDraft(); sdWizardRenderThumbs(); });
+      wrap.appendChild(div);
+    });
+  }
+  function sdWizardSubmit(){
+    var rules = getProductRules(sdSettingsCache);
+    var pr = rules[sdWizard.product] || {};
+    var formData = sdSerializeForm(pr.formPanelId);
+    if (sdWizard.notes) formData._notes = sdWizard.notes;
+    var record = {
+      product: sdWizard.product,
+      subtype: sdWizard.subtype,
+      agentCode: sdSession.code,
+      agentName: sdSession.name,
+      branch: sdSession.branch,
+      clientName: sdWizard.clientName,
+      clientPhone: sdWizard.clientPhone,
+      clientEmail: sdWizard.clientEmail,
+      formData: JSON.stringify(formData),
+      documents: JSON.stringify(sdWizard.documents.map(function(d){ return { name: d.name, mime: d.mime }; })),
+      cutoffApplies: !!pr.cutoffApplies
+    };
+    var submitBtn = document.getElementById('sdWizSubmit');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
+    dataLayer.createSubmission(record).then(function(sub){
+      var uploads = sdWizard.documents.map(function(d){
+        return dataLayer.uploadFile(sub.id, { name: d.name, mime: d.mime, dataBase64: (d.dataUrl || '').split(',')[1] || '' });
+      });
+      return Promise.all(uploads).then(function(){
+        return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Submission created by ' + sdSession.name + '.' });
+      }).then(function(){ return sub; });
+    }).then(function(sub){
+      sdWizardClearDraft();
+      sdWizard = sdWizardBlank();
+      sdWizardDraftChecked = false;
+      var dueTxt = sdFmtDateTime(sub.slaAcknowledgeDue);
+      document.getElementById('sdWizardSteps').innerHTML = '';
+      document.getElementById('sdWizardBody').innerHTML =
+        '<div class="sd-card">' +
+        '<h2>Submitted &mdash; ' + sdEsc(sub.id) + '</h2>' +
+        '<p style="font-size:13.5px;">Back office should acknowledge this by <strong>' + dueTxt + '</strong> (Trinidad time, business hours).' + (sub.cutoffApplied ? " It arrived after today's cutoff, so it's queued for the next business day." : '') + '</p>' +
+        '<div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">' +
+        '<button class="btn-primary" id="sdWizAnother">Start another submission</button>' +
+        '<button class="btn-ghost" id="sdWizToFiles">Go to My Files</button>' +
+        '</div></div>';
+      document.getElementById('sdWizAnother').addEventListener('click', function(){ sdWizardRenderStep(); });
+      document.getElementById('sdWizToFiles').addEventListener('click', function(){ sdGoToView('myfiles'); });
+    }).catch(function(err){
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit →'; }
+      sdShowModal('Could not submit', '<p>' + sdEsc(String(err)) + '</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]);
+    });
+  }
+
+  // ================================================================
+  // Agent — My Files
+  // ================================================================
+  function sdRenderMyFiles(){
+    document.getElementById('sdMyFileDetailCard').style.display = 'none';
+    dataLayer.listSubmissions({ agentCode: sdSession.code }).then(function(subs){
+      subs.sort(function(a, b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+      var list = document.getElementById('sdMyFilesList');
+      if (!subs.length) { list.innerHTML = '<div class="sd-empty">No submissions yet. Use "New Submission" to start one.</div>'; return; }
+      list.innerHTML = subs.map(function(s){
+        return '<div class="sd-row" data-id="' + s.id + '">' +
+          '<div class="sd-row-main"><strong>' + sdEsc(s.clientName) + ' &mdash; ' + sdEsc((getProductRules(sdSettingsCache)[s.product] || {}).label || s.product) + '</strong>' +
+          '<span class="mono">' + sdEsc(s.id) + ' &middot; submitted ' + sdFmtDateTime(s.submittedAt) + (sdIsStale(s) ? ' &middot; <span class="sd-stale">no update in 3+ business days</span>' : '') + '</span></div>' +
+          '<div class="sd-row-meta"><span class="sd-status-pill ' + sdStatusPillClass(s.status) + '">' + sdEsc(s.status) + '</span></div>' +
+          '</div>';
+      }).join('');
+      list.querySelectorAll('.sd-row').forEach(function(row){
+        row.addEventListener('click', function(){ sdShowMyFileDetail(row.getAttribute('data-id')); });
+      });
+    });
+  }
+  function sdShowMyFileDetail(id){
+    Promise.all([dataLayer.getSubmission(id), dataLayer.listEvents(id)]).then(function(res){
+      var sub = res[0], events = res[1];
+      if (!sub) return;
+      var card = document.getElementById('sdMyFileDetailCard');
+      card.style.display = '';
+      var needsInfoEvents = events.filter(function(e){ return e.type === 'needs_info'; });
+      var lastNeedsInfo = needsInfoEvents[needsInfoEvents.length - 1];
+      card.innerHTML =
+        '<h2>' + sdEsc(sub.clientName) + ' &mdash; ' + sdEsc(sub.id) + '</h2>' +
+        sdRenderRoute(sub.status) +
+        (sub.status === 'Needs Info' && lastNeedsInfo ? '<div class="callout-block flag"><strong>Back office needs:</strong> ' + sdEsc(lastNeedsInfo.text) + '</div>' : '') +
+        '<h3 style="margin-top:14px;">Timeline</h3>' +
+        '<div class="sd-timeline">' + events.map(function(e){
+          return '<div class="sd-tl-item"><time>' + sdFmtDateTime(e.createdAt) + '</time><div><span class="who">' + sdEsc(e.actor) + '</span>' + sdEsc(e.text) + '</div></div>';
+        }).join('') + '</div>' +
+        (sub.status === 'Needs Info' ? '<div style="margin-top:14px;"><button class="btn-primary" id="sdMyFileRespond">I have sent the missing info — notify back office</button></div>' : '');
+      var respondBtn = document.getElementById('sdMyFileRespond');
+      if (respondBtn) respondBtn.addEventListener('click', function(){
+        dataLayer.updateSubmission(sub.id, { status: 'Acknowledged', nextAction: 'Review resubmitted info' }).then(function(){
+          return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Agent confirmed the requested information has been sent back.' });
+        }).then(function(){ sdShowMyFileDetail(sub.id); sdRenderMyFiles(); });
+      });
+    });
+  }
+
+  // ================================================================
+  // Back office / Admin — Queue
+  // ================================================================
+  var sdQueueFilter = 'open';
+  function sdRenderQueueFilters(){
+    var filters = [
+      { id: 'open', label: 'Open' },
+      { id: 'mine', label: 'Owned by me' },
+      { id: 'unassigned', label: 'Unassigned' },
+      { id: 'needsinfo', label: 'Needs Info' },
+      { id: 'all', label: 'All' }
+    ];
+    document.getElementById('sdQueueFilters').innerHTML = filters.map(function(f){
+      return '<button type="button" class="sd-navbtn' + (sdQueueFilter === f.id ? ' active' : '') + '" data-filter="' + f.id + '" style="padding:7px 12px;font-size:12px;">' + f.label + '</button>';
+    }).join('') + '<button type="button" class="btn-ghost" id="sdQueueLogOffSystem" style="margin-left:auto;">+ Log off-system submission</button>';
+    document.querySelectorAll('#sdQueueFilters [data-filter]').forEach(function(b){
+      b.addEventListener('click', function(){ sdQueueFilter = b.getAttribute('data-filter'); sdRenderQueue(); });
+    });
+    document.getElementById('sdQueueLogOffSystem').addEventListener('click', sdOpenOffSystemModal);
+  }
+  function sdRenderQueue(){
+    document.getElementById('sdQueueDetailCard').style.display = 'none';
+    sdRenderQueueFilters();
+    dataLayer.listSubmissions({}).then(function(subs){
+      sdAllSubsCache = subs;
+      var rows = subs.filter(function(s){ return s.status !== 'Underwriting'; });
+      if (sdQueueFilter === 'mine') rows = rows.filter(function(s){ return s.owner === sdSession.code; });
+      else if (sdQueueFilter === 'unassigned') rows = rows.filter(function(s){ return !s.owner; });
+      else if (sdQueueFilter === 'needsinfo') rows = rows.filter(function(s){ return s.status === 'Needs Info'; });
+      else if (sdQueueFilter === 'all') rows = subs;
+      rows.sort(function(a, b){ return new Date(a.nextActionDue || a.createdAt) - new Date(b.nextActionDue || b.createdAt); });
+      var list = document.getElementById('sdQueueList');
+      if (!rows.length) { list.innerHTML = '<div class="sd-empty">Nothing here right now.</div>'; return; }
+      list.innerHTML = rows.map(function(s){
+        var sla = slaState(s.nextActionDue);
+        return '<div class="sd-row" data-id="' + s.id + '">' +
+          '<div class="sd-row-main"><strong>' + sdEsc(s.clientName) + ' &mdash; ' + sdEsc((getProductRules(sdSettingsCache)[s.product] || {}).label || s.product) + '</strong>' +
+          '<span class="mono">' + sdEsc(s.id) + ' &middot; ' + sdEsc(s.agentName) + ' (' + sdEsc(s.branch) + ')' + (s.offSystem ? ' &middot; off-system' : '') + (sdIsStale(s) ? ' &middot; <span class="sd-stale">no update in 3+ business days</span>' : '') + '</span></div>' +
+          '<div class="sd-row-meta">' +
+          '<span class="sd-status-pill ' + sdStatusPillClass(s.status) + '">' + sdEsc(s.status) + '</span>' +
+          '<span><span class="sla-dot ' + sla + '"></span><span class="sla-label ' + sla + '">' + sdEsc(s.nextAction || 'Acknowledge') + ' by ' + sdFmtDateTime(s.nextActionDue) + '</span></span>' +
+          '<span style="font-size:11px;color:var(--ink-faint);">' + (s.owner ? sdEsc(s.owner) : 'Unassigned') + '</span>' +
+          '</div></div>';
+      }).join('');
+      list.querySelectorAll('.sd-row').forEach(function(row){
+        row.addEventListener('click', function(){ sdShowQueueDetail(row.getAttribute('data-id')); });
+      });
+    });
+  }
+  function sdShowQueueDetail(id){
+    Promise.all([dataLayer.getSubmission(id), dataLayer.listEvents(id), dataLayer.listAgents()]).then(function(res){
+      var sub = res[0], events = res[1], agents = res[2];
+      if (!sub) return;
+      var card = document.getElementById('sdQueueDetailCard');
+      card.style.display = '';
+      var backOfficeAgents = agents.filter(function(a){ return a.role === 'backoffice' || a.role === 'admin'; });
+      var rules = getProductRules(sdSettingsCache)[sub.product] || {};
+      var docs = []; try { docs = JSON.parse(sub.documents || '[]'); } catch (e) {}
+      card.innerHTML =
+        '<h2>' + sdEsc(sub.clientName) + ' &mdash; ' + sdEsc(sub.id) + '</h2>' +
+        sdRenderRoute(sub.status) +
+        '<div class="grid2">' +
+        '<div class="field"><label>Owner</label><select id="sdQOwner"><option value="">Unassigned</option>' + backOfficeAgents.map(function(a){ return '<option value="' + sdEsc(a.code) + '"' + (sub.owner === a.code ? ' selected' : '') + '>' + sdEsc(a.name) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="field"><label>Status</label><input type="text" value="' + sdEsc(sub.status) + '" disabled class="mono"></div>' +
+        '</div>' +
+        '<div class="grid2">' +
+        '<div class="field"><label>Next action</label><input type="text" id="sdQNextAction" value="' + sdEsc(sub.nextAction || '') + '"></div>' +
+        '<div class="field"><label>Next action due</label><input type="datetime-local" id="sdQNextDue" value="' + (sub.nextActionDue ? sub.nextActionDue.slice(0, 16) : '') + '"></div>' +
+        '</div>' +
+        '<button class="btn-primary" id="sdQSave" style="margin-bottom:14px;">Save owner / next action</button>' +
+        '<div class="sd-err" id="sdQSaveErr"></div>' +
+        '<h3>Submitted details</h3>' +
+        '<table class="sd-table"><tbody>' +
+        '<tr><th>Agent</th><td>' + sdEsc(sub.agentName) + ' &middot; ' + sdEsc(sub.branch) + '</td></tr>' +
+        '<tr><th>Client</th><td>' + sdEsc(sub.clientName) + ' &middot; ' + sdEsc(sub.clientPhone) + (sub.clientEmail ? ' &middot; ' + sdEsc(sub.clientEmail) : '') + '</td></tr>' +
+        '<tr><th>Required docs</th><td>' + (rules.requiredDocs || []).map(sdEsc).join('; ') + '</td></tr>' +
+        '<tr><th>Attached files</th><td>' + (docs.length ? docs.map(function(d){ return sdEsc(d.name); }).join(', ') : 'None attached') + '</td></tr>' +
+        '</tbody></table>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">' +
+        '<button class="btn-ghost" id="sdQAck">Acknowledge</button>' +
+        '<button class="btn-ghost" id="sdQNeedsInfo">Request missing info</button>' +
+        '<button class="btn-ghost" id="sdQSendUw">Send to Underwriting</button>' +
+        '<button class="btn-ghost" id="sdQMessage">Message client</button>' +
+        '</div>' +
+        '<h3>Timeline</h3>' +
+        '<div class="sd-timeline">' + events.map(function(e){
+          return '<div class="sd-tl-item"><time>' + sdFmtDateTime(e.createdAt) + '</time><div><span class="who">' + sdEsc(e.actor) + '</span>' + sdEsc(e.text) + '</div></div>';
+        }).join('') + '</div>';
+
+      document.getElementById('sdQSave').addEventListener('click', function(){
+        var owner = document.getElementById('sdQOwner').value;
+        var nextAction = document.getElementById('sdQNextAction').value.trim();
+        var due = document.getElementById('sdQNextDue').value;
+        if (!nextAction || !due) { document.getElementById('sdQSaveErr').textContent = 'Next action and a due date/time are both required to save.'; return; }
+        dataLayer.updateSubmission(sub.id, { owner: owner, nextAction: nextAction, nextActionDue: new Date(due).toISOString() }).then(function(){
+          return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Owner/next action updated: ' + nextAction + ' by ' + sdFmtDateTime(new Date(due).toISOString()) + '.' });
+        }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); });
+      });
+      document.getElementById('sdQAck').addEventListener('click', function(){
+        var due = addBusinessHours(nowInTrinidad(), sdSettingsCache.ackSlaHours || 2, sdSettingsCache);
+        dataLayer.updateSubmission(sub.id, { status: 'Acknowledged', owner: sub.owner || sdSession.code, nextAction: sdSettingsCache.gmApprovalRequired ? 'Branch GM approval' : 'Prepare for Underwriting', nextActionDue: due.toISOString() }).then(function(){
+          return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Acknowledged by back office.' });
+        }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); sdMessageClientModal(sub, 'acknowledged'); });
+      });
+      document.getElementById('sdQNeedsInfo').addEventListener('click', function(){
+        sdShowModal('Request missing info', '<div class="field"><label>What is missing? (sent to the agent as one consolidated note)</label><textarea id="sdNeedsInfoText" rows="4" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;"></textarea></div>', [
+          { label: 'Cancel', onClick: sdCloseModal },
+          { label: 'Send request', primary: true, onClick: function(){
+            var text = document.getElementById('sdNeedsInfoText').value.trim();
+            if (!text) return;
+            dataLayer.updateSubmission(sub.id, { status: 'Needs Info', nextAction: 'Awaiting info from agent', nextActionDue: addBusinessHours(nowInTrinidad(), 24, sdSettingsCache).toISOString() }).then(function(){
+              return dataLayer.addEvent(sub.id, { type: 'needs_info', actor: sdSession.name, text: text });
+            }).then(function(){
+              sdCloseModal();
+              sdShowQueueDetail(sub.id); sdRenderQueue();
+              sdMessageClientModal(sub, 'needsInfo', { needsInfoText: text });
+            });
+          } }
+        ]);
+      });
+      document.getElementById('sdQSendUw').addEventListener('click', function(){
+        dataLayer.updateSubmission(sub.id, { status: 'Underwriting', nextAction: '', nextActionDue: '' }).then(function(){
+          return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Sent to Underwriting.' });
+        }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); sdMessageClientModal(sub, 'sentToUnderwriting'); });
+      });
+      document.getElementById('sdQMessage').addEventListener('click', function(){ sdMessageClientModal(sub, sub.status === 'Needs Info' ? 'needsInfo' : 'nudge', { needsInfoText: '' }); });
+    });
+  }
+  function sdOpenOffSystemModal(){
+    var rules = getProductRules(sdSettingsCache);
+    var html =
+      '<div class="grid2">' +
+      '<div class="field"><label>Product</label><select id="sdOffProduct">' + Object.keys(rules).map(function(k){ return '<option value="' + k + '">' + sdEsc(rules[k].label) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field"><label>Agent name</label><input type="text" id="sdOffAgentName"></div>' +
+      '</div>' +
+      '<div class="grid2">' +
+      '<div class="field"><label>Client name</label><input type="text" id="sdOffClientName"></div>' +
+      '<div class="field"><label>Client phone</label><input type="text" id="sdOffClientPhone"></div>' +
+      '</div>' +
+      '<div class="field"><label>Notes (how it came in, what was received)</label><textarea id="sdOffNotes" rows="3" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;"></textarea></div>';
+    sdShowModal('Log an off-system submission', html, [
+      { label: 'Cancel', onClick: sdCloseModal },
+      { label: 'Log it', primary: true, onClick: function(){
+        var rec = {
+          product: document.getElementById('sdOffProduct').value,
+          agentCode: sdSession.code,
+          agentName: document.getElementById('sdOffAgentName').value || sdSession.name,
+          branch: sdSession.branch,
+          clientName: document.getElementById('sdOffClientName').value,
+          clientPhone: document.getElementById('sdOffClientPhone').value,
+          formData: JSON.stringify({ _notes: document.getElementById('sdOffNotes').value }),
+          documents: JSON.stringify([]),
+          cutoffApplies: false
+        };
+        dataLayer.logOffSystemSubmission(rec).then(function(sub){
+          return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Logged as an off-system submission (originally received outside genAssist).' });
+        }).then(function(){
+          sdCloseModal();
+          if (sdCurrentView === 'queue') sdRenderQueue();
+          if (sdCurrentView === 'admin') sdRenderAdmin();
+        });
+      } }
+    ]);
+  }
+
+  // ================================================================
+  // Admin — Dashboard
+  // ================================================================
+  function sdRenderAdmin(){
+    dataLayer.listSubmissions({}).then(function(subs){
+      sdAllSubsCache = subs;
+      var now = nowInTrinidad();
+      var weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      var thisWeek = subs.filter(function(s){ return new Date(s.createdAt) >= weekAgo; });
+      var overdue = subs.filter(function(s){ return s.nextActionDue && slaState(s.nextActionDue) === 'red' && s.status !== 'Underwriting'; });
+      var needsInfo = subs.filter(function(s){ return s.status === 'Needs Info'; });
+      var offSystem = subs.filter(function(s){ return s.offSystem; });
+      var sentUw = subs.filter(function(s){ return s.status === 'Underwriting'; });
+      document.getElementById('sdAdminMetrics').innerHTML = [
+        { n: subs.length, label: 'Total submissions' },
+        { n: thisWeek.length, label: 'This week' },
+        { n: overdue.length, label: 'Overdue SLA' },
+        { n: needsInfo.length, label: 'Needs info' },
+        { n: sentUw.length, label: 'Sent to UW' },
+        { n: offSystem.length, label: 'Off-system logged' }
+      ].map(function(m){ return '<div class="sd-metric"><strong>' + m.n + '</strong><span>' + m.label + '</span></div>'; }).join('');
+      sdRenderOffSystemCard();
+    });
+  }
+  function sdRenderOffSystemCard(){
+    document.getElementById('sdOffSystemForm').innerHTML = '<button class="btn-primary" id="sdAdminLogOff">+ Log an off-system submission</button>';
+    document.getElementById('sdAdminLogOff').addEventListener('click', sdOpenOffSystemModal);
+  }
+  document.getElementById('sdExportCsvBtn').addEventListener('click', function(){
+    dataLayer.listSubmissions({}).then(function(subs){
+      var cols = ['id', 'product', 'subtype', 'status', 'agentCode', 'agentName', 'branch', 'clientName', 'clientPhone', 'clientEmail', 'owner', 'nextAction', 'nextActionDue', 'createdAt', 'submittedAt', 'cutoffApplied', 'offSystem'];
+      var lines = [cols.join(',')];
+      subs.forEach(function(s){
+        lines.push(cols.map(function(c){
+          var v = s[c] == null ? '' : String(s[c]);
+          if (v.indexOf(',') > -1 || v.indexOf('"') > -1) v = '"' + v.replace(/"/g, '""') + '"';
+          return v;
+        }).join(','));
+      });
+      var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'aral-submissions-' + ymd(nowInTrinidad()) + '.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    });
+  });
+
+  // ================================================================
+  // Admin — Settings
+  // ================================================================
+  function sdRenderSettings(){
+    dataLayer.getSettings().then(function(s){
+      sdSettingsCache = s;
+      var holidays = s.holidays || [];
+      document.getElementById('sdSettingsForm').innerHTML =
+        '<div class="sd-settings-row"><label>Submission cutoff time</label><input type="text" id="sdSetCutoff" value="' + sdEsc(s.cutoffTime) + '" placeholder="11:00"></div>' +
+        '<div class="sd-settings-row"><label>Business hours start</label><input type="text" id="sdSetBhStart" value="' + sdEsc(s.businessHours.start) + '" placeholder="08:00"></div>' +
+        '<div class="sd-settings-row"><label>Business hours end</label><input type="text" id="sdSetBhEnd" value="' + sdEsc(s.businessHours.end) + '" placeholder="16:00"></div>' +
+        '<div class="sd-settings-row"><label>Acknowledge SLA (business hours)</label><input type="text" id="sdSetAckSla" value="' + sdEsc(s.ackSlaHours) + '"></div>' +
+        '<div class="sd-settings-row"><label>Require Branch GM approval step</label><select id="sdSetGm"><option value="false"' + (!s.gmApprovalRequired ? ' selected' : '') + '>No</option><option value="true"' + (s.gmApprovalRequired ? ' selected' : '') + '>Yes</option></select></div>' +
+        '<div class="sd-settings-row"><label>Trinidad public holidays</label><div><div id="sdSetHolidays" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' +
+        holidays.map(function(h, i){ return '<span class="pill">' + sdEsc(h) + ' <button type="button" data-rmh="' + i + '" style="border:none;background:none;cursor:pointer;">&times;</button></span>'; }).join('') +
+        '</div><input type="date" id="sdSetNewHoliday"> <button type="button" class="btn-ghost" id="sdSetAddHoliday">Add</button></div></div>' +
+        '<div class="sd-settings-row"><label>Product checklists / cutoff overrides (advanced)</label><textarea id="sdSetProductOverrides" rows="4" style="width:100%;font-family:var(--font-mono);font-size:12px;">' + sdEsc(JSON.stringify(s.productRuleOverrides || {}, null, 2)) + '</textarea></div>' +
+        '<div class="sd-settings-row"><label>Message templates (advanced)</label><textarea id="sdSetTemplates" rows="4" style="width:100%;font-family:var(--font-mono);font-size:12px;">' + sdEsc(JSON.stringify(s.messageTemplates || {}, null, 2)) + '</textarea></div>' +
+        '<div style="margin-top:14px;"><button class="btn-primary" id="sdSetSave">Save settings</button> <span class="sd-err" id="sdSetErr" style="display:inline;"></span></div>';
+
+      document.getElementById('sdSetAddHoliday').addEventListener('click', function(){
+        var v = document.getElementById('sdSetNewHoliday').value;
+        if (!v) return;
+        if (holidays.indexOf(v) === -1) holidays.push(v);
+        sdSettingsCache.holidays = holidays;
+        sdRenderSettingsHolidaysOnly(holidays);
+      });
+      document.querySelectorAll('#sdSetHolidays [data-rmh]').forEach(function(b){
+        b.addEventListener('click', function(){ holidays.splice(+b.getAttribute('data-rmh'), 1); sdRenderSettingsHolidaysOnly(holidays); });
+      });
+      document.getElementById('sdSetSave').addEventListener('click', function(){
+        var err = document.getElementById('sdSetErr'); err.textContent = '';
+        var overrides, templates;
+        try { overrides = JSON.parse(document.getElementById('sdSetProductOverrides').value || '{}'); } catch (e) { err.textContent = 'Product overrides must be valid JSON.'; return; }
+        try { templates = JSON.parse(document.getElementById('sdSetTemplates').value || '{}'); } catch (e) { err.textContent = 'Message templates must be valid JSON.'; return; }
+        var patch = {
+          cutoffTime: document.getElementById('sdSetCutoff').value.trim(),
+          businessHours: { start: document.getElementById('sdSetBhStart').value.trim(), end: document.getElementById('sdSetBhEnd').value.trim() },
+          ackSlaHours: Number(document.getElementById('sdSetAckSla').value) || 2,
+          gmApprovalRequired: document.getElementById('sdSetGm').value === 'true',
+          holidays: holidays,
+          productRuleOverrides: overrides,
+          messageTemplates: templates
+        };
+        dataLayer.updateSettings(patch).then(function(ns){ sdSettingsCache = ns; err.textContent = 'Saved.'; err.style.color = 'var(--ok)'; });
+      });
+      dataLayer.listAgents().then(function(agents){
+        document.getElementById('sdAgentsList').innerHTML =
+          '<table class="sd-table"><thead><tr><th>Code</th><th>Name</th><th>Branch</th><th>Role</th><th>Active</th></tr></thead><tbody>' +
+          agents.map(function(a){ return '<tr><td class="mono">' + sdEsc(a.code) + '</td><td>' + sdEsc(a.name) + '</td><td>' + sdEsc(a.branch) + '</td><td>' + sdEsc(a.role) + '</td><td>' + (a.active ? 'Yes' : 'No') + '</td></tr>'; }).join('') +
+          '</tbody></table>';
+      });
+    });
+  }
+  function sdRenderSettingsHolidaysOnly(holidays){
+    document.getElementById('sdSetHolidays').innerHTML = holidays.map(function(h, i){ return '<span class="pill">' + sdEsc(h) + ' <button type="button" data-rmh="' + i + '" style="border:none;background:none;cursor:pointer;">&times;</button></span>'; }).join('');
+    document.querySelectorAll('#sdSetHolidays [data-rmh]').forEach(function(b){
+      b.addEventListener('click', function(){ holidays.splice(+b.getAttribute('data-rmh'), 1); sdRenderSettingsHolidaysOnly(holidays); });
+    });
+  }
+
+  // ---- boot: restore a saved session, or show the gate (default) ----
+  (function sdBoot(){
+    var saved = sdLoadSessionFromStorage();
+    if (saved) { sdSession = saved; sdEnterShell(); }
+  })();
 
   document.getElementById('todayDate').value = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,' / ');
 
