@@ -2741,7 +2741,8 @@
       formTab: 'motorclaim',
       formPanelId: 'form-motorclaim',
       readyTextId: 'mc-readyText',
-      cutoffApplies: false, // pinned: revisit once claims routing/SLA rules are confirmed
+      cutoffApplies: true, // confirmed: the 11:00 AM cutoff applies to everything sent to CSR in head office, claims included
+      statusFamily: 'claims',
       requiredDocs: [
         'Completed & signed Motor Vehicle Accident Report form',
         'Police report / station reference (if applicable)',
@@ -2755,7 +2756,8 @@
       formTab: 'propertyclaim',
       formPanelId: 'form-propertyclaim',
       readyTextId: 'pc-readyText',
-      cutoffApplies: false, // pinned: revisit once claims routing/SLA rules are confirmed
+      cutoffApplies: true, // confirmed: the 11:00 AM cutoff applies to everything sent to CSR in head office, claims included
+      statusFamily: 'claims',
       requiredDocs: [
         'Completed & signed Loss of or Damage to Property Claim form',
         'Police / Fire report reference (if applicable)',
@@ -3171,10 +3173,51 @@
     var gmOn = !!sdSettingsCache.gmApprovalRequired;
     return SD_PIPELINE.filter(function(s){ return gmOn || s.key !== 'gm'; });
   }
-  function sdRenderRoute(status){
+  // ---- canonical stage keys behind the status strings. sub.status stays
+  // the one literal/display string that's persisted and rendered everywhere
+  // (same as before) — this table is purely a lookup/reverse-lookup layer so
+  // Claims can use different outcome wording (Repudiated, Payment Issued...)
+  // without a different data model or touching the backend schema. Per the
+  // back office's steer: claims still route through "the underwriting
+  // department" for intake, so the first four stages stay identical between
+  // families — only the post-"sent to underwriting" outcome stages differ. ----
+  var SD_STAGE_LABELS = {
+    default: {
+      submitted: 'Submitted', ack: 'Acknowledged', gm: 'GM Approval', needsInfo: 'Needs Info',
+      sent: 'Underwriting', query: 'UW Query', approved: 'Approved', declined: 'Declined',
+      issued: 'Documents Issued', closed: 'Closed'
+    },
+    claims: {
+      submitted: 'Submitted', ack: 'Acknowledged', gm: 'GM Approval', needsInfo: 'Needs Info',
+      sent: 'Underwriting', query: 'Query', approved: 'Approved', declined: 'Repudiated',
+      issued: 'Payment Issued', closed: 'Closed'
+    }
+  };
+  // stages at or after "sent to underwriting" — once a file reaches one of
+  // these the 4-step intake stepper below should read as fully complete.
+  var SD_POST_SENT_KEYS = ['query', 'approved', 'declined', 'issued', 'closed'];
+  function sdStatusFamily(product){
+    var rules = getProductRules(sdSettingsCache);
+    return (rules[product] && rules[product].statusFamily) || 'default';
+  }
+  function sdStageLabel(product, key){
+    var fam = SD_STAGE_LABELS[sdStatusFamily(product)] || SD_STAGE_LABELS.default;
+    return fam[key] || SD_STAGE_LABELS.default[key];
+  }
+  function sdStageKey(product, status){
+    var fam = SD_STAGE_LABELS[sdStatusFamily(product)] || SD_STAGE_LABELS.default;
+    var found = Object.keys(fam).filter(function(k){ return fam[k] === status; })[0];
+    if (found) return found;
+    found = Object.keys(SD_STAGE_LABELS.default).filter(function(k){ return SD_STAGE_LABELS.default[k] === status; })[0];
+    return found || null;
+  }
+  function sdRenderRoute(status, product){
     var steps = sdActivePipeline();
     var curIdx = steps.map(function(s){ return s.status; }).indexOf(status);
-    if (curIdx === -1) curIdx = (status === 'Needs Info') ? 1 : 0;
+    if (curIdx === -1) {
+      var key = sdStageKey(product, status);
+      curIdx = (SD_POST_SENT_KEYS.indexOf(key) > -1) ? (steps.length - 1) : ((status === 'Needs Info') ? 1 : 0);
+    }
     var html = '<div class="route">';
     steps.forEach(function(s, i){
       var done = i <= curIdx;
@@ -3184,7 +3227,11 @@
     html += '</div>';
     return html;
   }
-  function sdStatusPillClass(status){
+  function sdStatusPillClass(status, product){
+    var key = sdStageKey(product, status);
+    if (key === 'needsInfo' || key === 'query' || key === 'declined') return 'flag';
+    if (key === 'sent' || key === 'approved' || key === 'issued') return 'ok';
+    if (key === 'closed') return '';
     if (status === 'Needs Info') return 'flag';
     if (status === 'Underwriting') return 'ok';
     return 'warn';
@@ -3195,7 +3242,9 @@
     acknowledged: "Hi {clientName}, this is ARAL confirming we've received your {product} submission (ref {refId}) and it's now being processed. We'll follow up if anything else is needed.",
     needsInfo: "Hi {clientName}, we need a bit more information to keep processing your {product} submission (ref {refId}): {needsInfoText} Please send this across when you can so we can keep things moving.",
     sentToUnderwriting: "Hi {clientName}, good news — your {product} submission (ref {refId}) has been sent to underwriting for review. We'll let you know as soon as we hear back.",
-    nudge: "Hi {clientName}, just checking in on your {product} submission (ref {refId}) — we're still working on it and wanted to keep you posted."
+    nudge: "Hi {clientName}, just checking in on your {product} submission (ref {refId}) — we're still working on it and wanted to keep you posted.",
+    approved: "Hi {clientName}, great news — underwriting has approved your {product} submission (ref {refId}). We'll be in touch shortly with next steps.",
+    declined: "Hi {clientName}, we have an update on your {product} submission (ref {refId}) — underwriting was unable to approve this one. We'll be in touch directly to go through the details and any options."
   };
   function sdGetTemplate(key){
     var custom = (sdSettingsCache.messageTemplates || {})[key];
@@ -3232,7 +3281,9 @@
     ]);
   }
   function sdIsStale(sub){
-    if (!sub || sub.status === 'Underwriting') return false;
+    if (!sub) return false;
+    var key = sdStageKey(sub.product, sub.status);
+    if (key === 'sent' || key === 'closed') return false;
     var anchor = sub.updatedAt || sub.submittedAt;
     if (!anchor) return false;
     var threshold = new Date(anchor);
@@ -3361,7 +3412,7 @@
         '<div class="sd-picker" id="sdPicker">' +
         Object.keys(rules).map(function(key){
           var r = rules[key];
-          return '<button type="button" class="sd-pickitem' + (sdWizard.product === key ? ' selected' : '') + '" data-product="' + key + '">' + sdEsc(r.label) + (r.cutoffApplies === false ? '<span>No same-day cutoff (pinned)</span>' : '<span>11:00 AM cutoff applies</span>') + '</button>';
+          return '<button type="button" class="sd-pickitem' + (sdWizard.product === key ? ' selected' : '') + '" data-product="' + key + '">' + sdEsc(r.label) + (r.cutoffApplies === false ? '<span>No same-day cutoff for this type</span>' : '<span>11:00 AM cutoff applies</span>') + '</button>';
         }).join('') +
         '</div></div>' +
         '<div class="sd-card" style="display:flex;justify-content:flex-end;"><button class="btn-primary" id="sdWizNext1"' + (sdWizard.product ? '' : ' disabled') + '>Continue &rarr;</button></div>';
@@ -3385,7 +3436,7 @@
           : "Submit by " + sdSettingsCache.cutoffTime + " Trinidad time for same-day processing — " + sdFmtMinutes(mins) + ' left.';
         cutoffHtml = '<div class="sd-cutoff-banner ' + cls + '" id="sdCutoffBanner"><span>' + msg + '</span><span class="mono" id="sdCutoffClock"></span></div>';
       } else {
-        cutoffHtml = '<div class="sd-cutoff-banner"><span>No same-day cutoff applies to this submission type yet &mdash; claims routing/SLA rules for this type are still being finalised.</span></div>';
+        cutoffHtml = '<div class="sd-cutoff-banner"><span>No same-day cutoff tracked for this submission type.</span></div>';
       }
       body.innerHTML =
         cutoffHtml +
@@ -3596,7 +3647,7 @@
         return '<div class="sd-row" data-id="' + s.id + '">' +
           '<div class="sd-row-main"><strong>' + sdEsc(s.clientName) + ' &mdash; ' + sdEsc((getProductRules(sdSettingsCache)[s.product] || {}).label || s.product) + '</strong>' +
           '<span class="mono">' + sdEsc(s.id) + ' &middot; submitted ' + sdFmtDateTime(s.submittedAt) + (sdIsStale(s) ? ' &middot; <span class="sd-stale">no update in 3+ business days</span>' : '') + '</span></div>' +
-          '<div class="sd-row-meta"><span class="sd-status-pill ' + sdStatusPillClass(s.status) + '">' + sdEsc(s.status) + '</span></div>' +
+          '<div class="sd-row-meta"><span class="sd-status-pill ' + sdStatusPillClass(s.status, s.product) + '">' + sdEsc(s.status) + '</span></div>' +
           '</div>';
       }).join('');
       list.querySelectorAll('.sd-row').forEach(function(row){
@@ -3612,10 +3663,15 @@
       card.style.display = '';
       var needsInfoEvents = events.filter(function(e){ return e.type === 'needs_info'; });
       var lastNeedsInfo = needsInfoEvents[needsInfoEvents.length - 1];
+      var uwFeedbackEvents = events.filter(function(e){ return e.type === 'uw_feedback'; });
+      var lastUwFeedback = uwFeedbackEvents[uwFeedbackEvents.length - 1];
+      var stageKey = sdStageKey(sub.product, sub.status);
+      var uwBannerClass = (stageKey === 'query' || stageKey === 'declined') ? 'flag' : '';
       card.innerHTML =
         '<h2>' + sdEsc(sub.clientName) + ' &mdash; ' + sdEsc(sub.id) + '</h2>' +
-        sdRenderRoute(sub.status) +
+        sdRenderRoute(sub.status, sub.product) +
         (sub.status === 'Needs Info' && lastNeedsInfo ? '<div class="callout-block flag"><strong>Back office needs:</strong> ' + sdEsc(lastNeedsInfo.text) + '</div>' : '') +
+        (lastUwFeedback && ['query', 'approved', 'declined', 'issued'].indexOf(stageKey) > -1 ? '<div class="callout-block ' + uwBannerClass + '"><strong>Underwriting feedback (' + sdEsc(sub.status) + '):</strong> ' + sdEsc(lastUwFeedback.text) + '</div>' : '') +
         '<h3 style="margin-top:14px;">Timeline</h3>' +
         '<div class="sd-timeline">' + events.map(function(e){
           return '<div class="sd-tl-item"><time>' + sdFmtDateTime(e.createdAt) + '</time><div><span class="who">' + sdEsc(e.actor) + '</span>' + sdEsc(e.text) + '</div></div>';
@@ -3655,10 +3711,10 @@
     sdRenderQueueFilters();
     dataLayer.listSubmissions({}).then(function(subs){
       sdAllSubsCache = subs;
-      var rows = subs.filter(function(s){ return s.status !== 'Underwriting'; });
+      var rows = subs.filter(function(s){ var k = sdStageKey(s.product, s.status); return k !== 'sent' && k !== 'closed'; });
       if (sdQueueFilter === 'mine') rows = rows.filter(function(s){ return s.owner === sdSession.code; });
       else if (sdQueueFilter === 'unassigned') rows = rows.filter(function(s){ return !s.owner; });
-      else if (sdQueueFilter === 'needsinfo') rows = rows.filter(function(s){ return s.status === 'Needs Info'; });
+      else if (sdQueueFilter === 'needsinfo') rows = rows.filter(function(s){ return sdStageKey(s.product, s.status) === 'needsInfo'; });
       else if (sdQueueFilter === 'all') rows = subs;
       rows.sort(function(a, b){ return new Date(a.nextActionDue || a.createdAt) - new Date(b.nextActionDue || b.createdAt); });
       var list = document.getElementById('sdQueueList');
@@ -3669,7 +3725,7 @@
           '<div class="sd-row-main"><strong>' + sdEsc(s.clientName) + ' &mdash; ' + sdEsc((getProductRules(sdSettingsCache)[s.product] || {}).label || s.product) + '</strong>' +
           '<span class="mono">' + sdEsc(s.id) + ' &middot; ' + sdEsc(s.agentName) + ' (' + sdEsc(s.branch) + ')' + (s.offSystem ? ' &middot; off-system' : '') + (sdIsStale(s) ? ' &middot; <span class="sd-stale">no update in 3+ business days</span>' : '') + '</span></div>' +
           '<div class="sd-row-meta">' +
-          '<span class="sd-status-pill ' + sdStatusPillClass(s.status) + '">' + sdEsc(s.status) + '</span>' +
+          '<span class="sd-status-pill ' + sdStatusPillClass(s.status, s.product) + '">' + sdEsc(s.status) + '</span>' +
           '<span><span class="sla-dot ' + sla + '"></span><span class="sla-label ' + sla + '">' + sdEsc(s.nextAction || 'Acknowledge') + ' by ' + sdFmtDateTime(s.nextActionDue) + '</span></span>' +
           '<span style="font-size:11px;color:var(--ink-faint);">' + (s.owner ? sdEsc(s.owner) : 'Unassigned') + '</span>' +
           '</div></div>';
@@ -3677,6 +3733,100 @@
       list.querySelectorAll('.sd-row').forEach(function(row){
         row.addEventListener('click', function(){ sdShowQueueDetail(row.getAttribute('data-id')); });
       });
+    });
+  }
+  // ---- "Underwriting outcome" — recording what underwriting comes back
+  // with on the SAME submission thread (no new submission created), so the
+  // agent gets the feedback against the file they already know. ----
+  function sdUwOutcomeSectionHtml(stageKey, product){
+    if (stageKey === 'sent') {
+      return '<h3>Underwriting outcome</h3>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+        '<button class="btn-ghost" id="sdQUwQuery">Log a query from Underwriting</button>' +
+        '<button class="btn-ghost" id="sdQUwApprove">Record: Approved</button>' +
+        '<button class="btn-ghost" id="sdQUwDecline">Record: ' + sdEsc(sdStageLabel(product, 'declined')) + '</button>' +
+        '</div>';
+    }
+    if (stageKey === 'query') {
+      return '<h3>Underwriting outcome</h3>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+        '<button class="btn-primary" id="sdQUwResolved">Resolved — resubmit to Underwriting</button>' +
+        '</div>';
+    }
+    if (stageKey === 'approved') {
+      return '<h3>Underwriting outcome</h3>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+        '<button class="btn-primary" id="sdQUwIssue">Mark ' + sdEsc(sdStageLabel(product, 'issued')) + '</button>' +
+        '</div>';
+    }
+    if (stageKey === 'declined' || stageKey === 'issued') {
+      return '<h3>Underwriting outcome</h3>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+        '<button class="btn-ghost" id="sdQUwClose">Close file</button>' +
+        '</div>';
+    }
+    return '';
+  }
+  function sdOpenUwDecisionModal(sub, outcomeKey){
+    var decisionLabel = sdStageLabel(sub.product, outcomeKey);
+    sdShowModal('Record Underwriting decision — ' + decisionLabel,
+      '<div class="field"><label>Underwriting notes / reference (optional, shown to the agent)</label><textarea id="sdUwDecisionNote" rows="4" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;"></textarea></div>', [
+        { label: 'Cancel', onClick: sdCloseModal },
+        { label: 'Record ' + decisionLabel, primary: true, onClick: function(){
+          var note = document.getElementById('sdUwDecisionNote').value.trim();
+          var nextAction = outcomeKey === 'approved' ? ('Prepare ' + sdStageLabel(sub.product, 'issued').toLowerCase()) : 'Follow up with agent/client';
+          dataLayer.updateSubmission(sub.id, { status: decisionLabel, nextAction: nextAction, nextActionDue: addBusinessHours(nowInTrinidad(), 24, sdSettingsCache).toISOString() }).then(function(){
+            return dataLayer.addEvent(sub.id, { type: 'uw_feedback', actor: sdSession.name, text: 'Underwriting recorded: ' + decisionLabel + (note ? ' — ' + note : '') + '.' });
+          }).then(function(){
+            sdCloseModal();
+            sdShowQueueDetail(sub.id); sdRenderQueue();
+            sdMessageClientModal(sub, outcomeKey === 'approved' ? 'approved' : 'declined');
+          });
+        } }
+      ]);
+  }
+  function sdWireUwOutcomeButtons(sub){
+    var qBtn = document.getElementById('sdQUwQuery');
+    if (qBtn) qBtn.addEventListener('click', function(){
+      sdShowModal('Log a query from Underwriting', '<div class="field"><label>What is underwriting asking for? (one consolidated note)</label><textarea id="sdUwQueryText" rows="4" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;"></textarea></div>', [
+        { label: 'Cancel', onClick: sdCloseModal },
+        { label: 'Log query', primary: true, onClick: function(){
+          var text = document.getElementById('sdUwQueryText').value.trim();
+          if (!text) return;
+          var queryLabel = sdStageLabel(sub.product, 'query');
+          dataLayer.updateSubmission(sub.id, { status: queryLabel, nextAction: 'Resolve underwriting query', nextActionDue: addBusinessHours(nowInTrinidad(), 24, sdSettingsCache).toISOString() }).then(function(){
+            return dataLayer.addEvent(sub.id, { type: 'uw_feedback', actor: sdSession.name, text: 'Underwriting query: ' + text });
+          }).then(function(){
+            sdCloseModal();
+            sdShowQueueDetail(sub.id); sdRenderQueue();
+          });
+        } }
+      ]);
+    });
+    var apBtn = document.getElementById('sdQUwApprove');
+    if (apBtn) apBtn.addEventListener('click', function(){ sdOpenUwDecisionModal(sub, 'approved'); });
+    var dcBtn = document.getElementById('sdQUwDecline');
+    if (dcBtn) dcBtn.addEventListener('click', function(){ sdOpenUwDecisionModal(sub, 'declined'); });
+    var resBtn = document.getElementById('sdQUwResolved');
+    if (resBtn) resBtn.addEventListener('click', function(){
+      var sentLabel = sdStageLabel(sub.product, 'sent');
+      dataLayer.updateSubmission(sub.id, { status: sentLabel, nextAction: '', nextActionDue: '' }).then(function(){
+        return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Resubmitted to Underwriting with the requested information (same thread, ref ' + sub.id + ').' });
+      }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); });
+    });
+    var isBtn = document.getElementById('sdQUwIssue');
+    if (isBtn) isBtn.addEventListener('click', function(){
+      var issuedLabel = sdStageLabel(sub.product, 'issued');
+      dataLayer.updateSubmission(sub.id, { status: issuedLabel, nextAction: 'Close file', nextActionDue: addBusinessHours(nowInTrinidad(), 24, sdSettingsCache).toISOString() }).then(function(){
+        return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: issuedLabel + '.' });
+      }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); });
+    });
+    var clBtn = document.getElementById('sdQUwClose');
+    if (clBtn) clBtn.addEventListener('click', function(){
+      var closedLabel = sdStageLabel(sub.product, 'closed');
+      dataLayer.updateSubmission(sub.id, { status: closedLabel, nextAction: '', nextActionDue: '' }).then(function(){
+        return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'File closed.' });
+      }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); });
     });
   }
   function sdShowQueueDetail(id){
@@ -3690,7 +3840,7 @@
       var docs = []; try { docs = JSON.parse(sub.documents || '[]'); } catch (e) {}
       card.innerHTML =
         '<h2>' + sdEsc(sub.clientName) + ' &mdash; ' + sdEsc(sub.id) + '</h2>' +
-        sdRenderRoute(sub.status) +
+        sdRenderRoute(sub.status, sub.product) +
         '<div class="grid2">' +
         '<div class="field"><label>Owner</label><select id="sdQOwner"><option value="">Unassigned</option>' + backOfficeAgents.map(function(a){ return '<option value="' + sdEsc(a.code) + '"' + (sub.owner === a.code ? ' selected' : '') + '>' + sdEsc(a.name) + '</option>'; }).join('') + '</select></div>' +
         '<div class="field"><label>Status</label><input type="text" value="' + sdEsc(sub.status) + '" disabled class="mono"></div>' +
@@ -3714,6 +3864,7 @@
         '<button class="btn-ghost" id="sdQSendUw">Send to Underwriting</button>' +
         '<button class="btn-ghost" id="sdQMessage">Message client</button>' +
         '</div>' +
+        sdUwOutcomeSectionHtml(sdStageKey(sub.product, sub.status), sub.product) +
         '<h3>Timeline</h3>' +
         '<div class="sd-timeline">' + events.map(function(e){
           return '<div class="sd-tl-item"><time>' + sdFmtDateTime(e.createdAt) + '</time><div><span class="who">' + sdEsc(e.actor) + '</span>' + sdEsc(e.text) + '</div></div>';
@@ -3751,11 +3902,12 @@
         ]);
       });
       document.getElementById('sdQSendUw').addEventListener('click', function(){
-        dataLayer.updateSubmission(sub.id, { status: 'Underwriting', nextAction: '', nextActionDue: '' }).then(function(){
+        dataLayer.updateSubmission(sub.id, { status: sdStageLabel(sub.product, 'sent'), nextAction: '', nextActionDue: '' }).then(function(){
           return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Sent to Underwriting.' });
         }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); sdMessageClientModal(sub, 'sentToUnderwriting'); });
       });
-      document.getElementById('sdQMessage').addEventListener('click', function(){ sdMessageClientModal(sub, sub.status === 'Needs Info' ? 'needsInfo' : 'nudge', { needsInfoText: '' }); });
+      document.getElementById('sdQMessage').addEventListener('click', function(){ sdMessageClientModal(sub, sdStageKey(sub.product, sub.status) === 'needsInfo' ? 'needsInfo' : 'nudge', { needsInfoText: '' }); });
+      sdWireUwOutcomeButtons(sub);
     });
   }
   function sdOpenOffSystemModal(){
@@ -3804,10 +3956,10 @@
       var now = nowInTrinidad();
       var weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       var thisWeek = subs.filter(function(s){ return new Date(s.createdAt) >= weekAgo; });
-      var overdue = subs.filter(function(s){ return s.nextActionDue && slaState(s.nextActionDue) === 'red' && s.status !== 'Underwriting'; });
-      var needsInfo = subs.filter(function(s){ return s.status === 'Needs Info'; });
+      var overdue = subs.filter(function(s){ var k = sdStageKey(s.product, s.status); return s.nextActionDue && slaState(s.nextActionDue) === 'red' && k !== 'sent' && k !== 'closed'; });
+      var needsInfo = subs.filter(function(s){ return sdStageKey(s.product, s.status) === 'needsInfo'; });
       var offSystem = subs.filter(function(s){ return s.offSystem; });
-      var sentUw = subs.filter(function(s){ return s.status === 'Underwriting'; });
+      var sentUw = subs.filter(function(s){ return sdStageKey(s.product, s.status) === 'sent'; });
       document.getElementById('sdAdminMetrics').innerHTML = [
         { n: subs.length, label: 'Total submissions' },
         { n: thisWeek.length, label: 'This week' },
@@ -5672,7 +5824,7 @@
     title: 'Motor Vehicle Accident Report Form',
     readyFields: ['insuredName', 'policyNo', 'regNo', 'accidentDate', 'declarationConfirmed'],
     captionField: 'insuredName',
-    protoNote: 'Built directly from TATIL\'s real "Motor Vehicle Accident Report Form" &mdash; using generic placeholder data, not a real claimant\'s answers. <em>Claims routing/labels below use the same generic status pipeline as the proposal forms for now &mdash; pinned for a follow-up update once claims-specific routing details are confirmed.</em>',
+    protoNote: 'Built directly from TATIL\'s real "Motor Vehicle Accident Report Form" &mdash; using generic placeholder data, not a real claimant\'s answers. <em>Claims route through the Submission Desk the same way as proposal forms, including the 11:00 AM cutoff &mdash; underwriting\'s eventual response is recorded as Query / Approved / Repudiated / Payment Issued on this same file.</em>',
     sections: [
       { num:'1', title:'The Insured', fields:[
         { type:'text', id:'insuredName', label:'Name', width:'half' },
@@ -5790,7 +5942,7 @@
     title: 'Loss of or Damage to Property Claim Form',
     readyFields: ['insuredName', 'policyNo', 'lossDate', 'declarationConfirmed'],
     captionField: 'insuredName',
-    protoNote: 'Built directly from TATIL\'s real "Loss of or Damage to Property Claim Form" &mdash; using generic placeholder data, not a real claimant\'s answers. <em>Claims routing/labels below use the same generic status pipeline as the proposal forms for now &mdash; pinned for a follow-up update once claims-specific routing details are confirmed.</em>',
+    protoNote: 'Built directly from TATIL\'s real "Loss of or Damage to Property Claim Form" &mdash; using generic placeholder data, not a real claimant\'s answers. <em>Claims route through the Submission Desk the same way as proposal forms, including the 11:00 AM cutoff &mdash; underwriting\'s eventual response is recorded as Query / Approved / Repudiated / Payment Issued on this same file.</em>',
     sections: [
       { num:'1', title:'Policy & Insured', fields:[
         { type:'text', id:'policyNo', label:'Policy number', width:'half' },
