@@ -12,10 +12,10 @@ Our job is to acknowledge fast, chase missing items in one consolidated ask (nev
 
 ## 1. Start of day — triage the queue
 
-Open **Queue**. It defaults to the **Open** filter (everything not yet with Underwriting). Rows are sorted by whichever deadline is soonest — oldest/most urgent at the top.
+Open **Queue**. It defaults to the **Open** filter — everything that needs action from you right now. That's every status except `Underwriting` (sitting with Tatil, nothing to do yet) and `Closed`/finished files; a file waiting on an Underwriting query or decision still shows up here, since that's on you to chase or record. Rows are sorted by whichever deadline is soonest — oldest/most urgent at the top.
 
 Each row shows:
-- **Status pill** — `Submitted` / `Acknowledged` / `GM Approval` / `Needs Info` / `Underwriting`
+- **Status pill** — `Submitted` / `Acknowledged` / `GM Approval` / `Needs Info` / `Underwriting` / `UW Query` / `Approved` / `Declined` / `Documents Issued` / `Closed` (Claims uses `Query` / `Repudiated` / `Payment Issued` instead of the UW Query/Declined/Documents Issued wording — same lifecycle, different words)
 - **SLA dot** — green (on track), amber (75%+ of the SLA window used), red (breached)
 - **Owner** — who's handling it, or "Unassigned"
 - A **stale** badge if there's been no update in 3+ business days
@@ -24,7 +24,7 @@ Use the filters to focus:
 - **Owned by me** — your personal worklist
 - **Unassigned** — claim these first thing
 - **Needs Info** — files waiting on the agent, not on you
-- **All** — includes files already with Underwriting, for reference
+- **All** — includes files currently with Underwriting and closed files, for reference
 
 **Any red dot gets dealt with before anything else, regardless of filter.**
 
@@ -60,13 +60,26 @@ If a file — regardless of status — hasn't had any update (acknowledge, needs
 
 ---
 
-## 4. When a file comes in off-system (WhatsApp, email, paper)
+## 4. Recording Underwriting's response — same file, no new submission
+
+Once a file is `Underwriting`, it drops out of the default **Open** filter (switch to **All** to find it). When Tatil actually comes back to you, open that same file and use the **Underwriting outcome** buttons at the bottom of the detail screen — never log the response as a brand-new submission, it stays on the original reference number the whole way through so the agent's history and your audit trail stay in one thread:
+
+- **Log a query from Underwriting** — if Tatil comes back asking for something before they'll decide, write it as one consolidated note (same rule as Request missing info). The file moves to `UW Query` (Claims shows `Query`), and the agent sees it highlighted on their file. Once you've got what's needed, use **Resolved — resubmit to Underwriting** to put it back to `Underwriting` on the same thread.
+- **Record: Approved** / **Record: Declined** — once Tatil gives a decision, record it here with an optional note (policy reference, terms, reason for decline, etc.). This moves the file to `Approved` or `Declined` — for Claims, a decline is recorded as `Repudiated` instead, since that's the correct term for a claim. A client-update message opens automatically either way, and the agent sees the decision and your note on the file.
+- **Mark Documents Issued** (Claims: **Mark Payment Issued**) — once the policy documents or claim payment have actually gone out, mark it here so the file reflects reality.
+- **Close file** — once there's nothing left to do (after Declined/Repudiated, or after Documents/Payment Issued), close it out.
+
+The agent never needs to be told any of this outside the system — it shows up on their file automatically as soon as you save it.
+
+---
+
+## 5. When a file comes in off-system (WhatsApp, email, paper)
 
 Don't just process it quietly — **log it**. Click **"+ Log off-system submission"** at the top of the Queue (also available from the Admin Dashboard), fill in product/agent/client/notes, and save. This is how admin tracks which agents still aren't using the Submission Desk, so it can be followed up with them directly. It does not go through the normal document checklist — just a record for visibility.
 
 ---
 
-## 5. Admin-only: Dashboard and Settings
+## 6. Admin-only: Dashboard and Settings
 
 **Admin Dashboard** gives weekly numbers (total submissions, overdue count, needs-info count, sent-to-UW count, off-system-logged count) and an **Export CSV** button for anything you need outside the tool (board reporting, audits, etc.).
 
@@ -80,7 +93,7 @@ Don't just process it quietly — **log it**. Click **"+ Log off-system submissi
 
 ---
 
-## 6. If something looks wrong
+## 7. If something looks wrong
 
 - A file stuck with no SLA dot or a blank due date usually means **Save owner / next action** was never clicked after Acknowledge — go in and set it.
 - If a whole day's files look off (wrong cutoff times, wrong business hours), check **Settings** first before assuming it's a bug.

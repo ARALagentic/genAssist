@@ -45,19 +45,23 @@ Tap **New Submission**.
 | Claims — Property | Signed Property Claim form, police/fire report reference (if applicable), photos of damage, proof of ownership/receipts |
 | Other | Describe what's needed in the notes — back office will confirm |
 
-*Note: Claims and Renewal don't carry the 11:00 AM same-day cutoff yet — those routing/SLA rules are still being finalised. Everything else does.*
+*Note: the 11:00 AM cutoff applies to everything, including Claims — confirmed, this is the rule for everything sent to CSR in head office.*
 
 ---
 
 ## 3. Tracking your files — "My Files"
 
-Every file you've submitted shows up here with a status badge:
+Every file you've submitted shows up here with a status badge. The intake route is the same for every product:
 
 `Submitted` → `Acknowledged` → (`GM Approval` if that step is switched on) → `With Underwriting`
 
 Tap into any file to see the full timeline — every status change and note, with who did it and when.
 
 **If a file shows "Needs Info"**: open it, read exactly what back office needs (it's consolidated into one list, not a drip of separate messages), get it from the client, then tap **"I have sent the missing info — notify back office."** That moves it back into the queue and resets the response clock.
+
+**Once underwriting actually responds**, back office records that outcome on your same file (same reference number — never a new submission), and you'll see it two ways on that file's detail screen:
+- The status badge updates to one of: `UW Query`, `Approved`, `Declined`, `Documents Issued`, `Closed` — or, for Claims specifically: `Query`, `Approved`, `Repudiated`, `Payment Issued`, `Closed` (claims use different outcome wording since a "decline" there is a repudiation and the payout isn't a policy document).
+- A highlighted **"Underwriting feedback"** note appears right under the route stepper with whatever back office recorded — e.g. what underwriting is querying, or the decision and any notes. If your file is sitting at `UW Query`/`Query`, that's your cue to get back office whatever underwriting is asking for so they can resubmit it on the same thread.
 
 Files with no update in 3+ business days get a small warning badge — that's your cue to follow up with back office yourself if you haven't heard anything.
 
