@@ -53,7 +53,7 @@ Tap **New Submission**.
 
 Every file you've submitted shows up here with a status badge. The intake route is the same for every product:
 
-`Submitted` → `Acknowledged` → (`GM Approval` if that step is switched on) → `With Underwriting`
+`Submitted` → `Acknowledged` → (`GM Approval` if that step is switched on) → `Underwriting`
 
 Tap into any file to see the full timeline — every status change and note, with who did it and when.
 
