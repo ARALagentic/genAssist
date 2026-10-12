@@ -2428,6 +2428,436 @@
 (function(){
   var reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // ================================================================
+  // genAssist Submission Desk — config, PRODUCT_RULES, time/SLA math,
+  // and the dataLayer (LocalDemoAdapter / AppsScriptAdapter).
+  // This block is additive scaffolding: nothing above or below this
+  // block (the existing Proto Lab form explainer) is touched by it.
+  // ================================================================
+
+  // ---- one-line switch: 'local' runs entirely in this browser tab
+  // (localStorage, no backend needed) · 'appsscript' talks to a
+  // deployed Google Apps Script Web App (see SETUP.md). ----
+  var SD_CONFIG = {
+    backend: 'local', // 'local' | 'appsscript'
+    APPS_SCRIPT_URL: '' // paste your /exec Web App URL here once deployed
+  };
+
+  // ---- PRODUCT_RULES: one entry per submission type offered in the
+  // wizard's Step 1. `formTab` is the data-form id of the matching
+  // Proto Lab tab (reused for Step 3's "fill it out" screen) — null
+  // means there's no single matching form (Renewal reuses whichever
+  // product's own form applies; Other is free-text).
+  // Admins can override requiredDocs/cutoffApplies at runtime via
+  // Settings.productRuleOverrides without touching this code. ----
+  var PRODUCT_RULES = {
+    motor: {
+      label: 'Motor',
+      formTab: 'motorproposal',
+      cutoffApplies: true,
+      requiredDocs: [
+        'Valid ID (driver’s licence or national ID)',
+        'Vehicle registration (certified copy)',
+        'Completed & signed Motor Insurance Proposal form',
+        'Photos of the vehicle (all 4 sides)',
+        'Current No-Claims Discount letter / renewal notice (if applicable)'
+      ]
+    },
+    property_residential: {
+      label: 'Property — Residential (Homesure)',
+      formTab: 'homesure',
+      cutoffApplies: true,
+      requiredDocs: [
+        'Valid ID',
+        'Proof of address',
+        'Completed & signed Homesure Proposal form',
+        'Recent photos of the property (exterior + interior)',
+        'List of items & valuations (if All Risks cover is requested)'
+      ]
+    },
+    property_commercial: {
+      label: 'Property — Commercial (Fire Insurance)',
+      formTab: 'fireproposal',
+      cutoffApplies: true,
+      requiredDocs: [
+        'Valid ID / company registration',
+        'Completed & signed Fire Insurance Proposal form',
+        'Recent photos of the premises',
+        'Stock / asset valuation (if applicable)'
+      ]
+    },
+    covercare_new: {
+      label: 'Covercare — New Application',
+      formTab: 'ccproposal',
+      cutoffApplies: true,
+      requiredDocs: [
+        'Copy of ID',
+        'Birth Certificate',
+        'Immunization Card (if applicable)',
+        'Utility Bill (≤ 3 months old)',
+        'Bank Statement',
+        'Completed KYC Form',
+        'Completed Covercare Proposal form'
+      ]
+    },
+    covercare_conversion: {
+      label: 'Covercare — Existing Member Conversion',
+      formTab: 'covercare',
+      cutoffApplies: true,
+      requiredDocs: [
+        'Copy of ID',
+        'Birth Certificate',
+        'Immunization Card',
+        'Utility Bill (≤ 3 months old)',
+        'Bank Statement',
+        'Completed KYC Form',
+        'Medical Reports (if requested)',
+        'Premium receipt',
+        'Stamped Deduction Order',
+        'Agent’s Report',
+        'Beneficiary ID'
+      ]
+    },
+    change: {
+      label: 'Change in Policy',
+      formTab: 'change',
+      cutoffApplies: true,
+      requiredDocs: [
+        'Valid ID',
+        'Completed & signed Change in Policy form',
+        'Supporting documents for the specific change requested'
+      ]
+    },
+    renewal: {
+      label: 'Renewal',
+      formTab: null, // reuses whichever product's own proposal tab applies
+      cutoffApplies: true,
+      requiredDocs: [
+        'Valid ID (if expired since last renewal)',
+        'Updated answers for anything that has changed since the last proposal',
+        'Payment confirmation'
+      ]
+    },
+    claims_motor: {
+      label: 'Claims — Motor',
+      formTab: 'motorclaim',
+      cutoffApplies: false, // pinned: revisit once claims routing/SLA rules are confirmed
+      requiredDocs: [
+        'Completed & signed Motor Vehicle Accident Report form',
+        'Police report / station reference (if applicable)',
+        'Photos of vehicle damage',
+        'Repair estimate',
+        'Driver’s licence copy'
+      ]
+    },
+    claims_property: {
+      label: 'Claims — Property',
+      formTab: 'propertyclaim',
+      cutoffApplies: false, // pinned: revisit once claims routing/SLA rules are confirmed
+      requiredDocs: [
+        'Completed & signed Loss of or Damage to Property Claim form',
+        'Police / Fire report reference (if applicable)',
+        'Photos of the damage',
+        'Proof of ownership / purchase receipts for claimed items'
+      ]
+    },
+    other: {
+      label: 'Other / Not Listed',
+      formTab: null,
+      cutoffApplies: true,
+      requiredDocs: [
+        'Describe what’s needed in the notes field — back office will confirm required documents.'
+      ]
+    }
+  };
+  // Merge any admin-set overrides from Settings on top of the defaults above.
+  function getProductRules(settings){
+    var overrides = (settings && settings.productRuleOverrides) || {};
+    var merged = {};
+    Object.keys(PRODUCT_RULES).forEach(function(k){
+      merged[k] = Object.assign({}, PRODUCT_RULES[k], overrides[k] || {});
+    });
+    return merged;
+  }
+
+  // ---- Trinidad time / business-day / SLA helpers ----
+  var TT_TZ = 'America/Port_of_Spain';
+  var SD_DEFAULT_SETTINGS = {
+    cutoffTime: '11:00',
+    timezone: TT_TZ,
+    businessHours: { start: '08:00', end: '16:00' },
+    holidays: [], // array of 'YYYY-MM-DD' strings, admin-editable
+    ackSlaHours: 2,
+    gmApprovalRequired: false,
+    productRuleOverrides: {},
+    messageTemplates: {}
+  };
+  function nowInTrinidad(){
+    return new Date(new Date().toLocaleString('en-US', { timeZone: TT_TZ }));
+  }
+  function ymd(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function hm(d){ return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+  function isBusinessDay(d, settings){
+    var day = d.getDay(); // 0 Sun .. 6 Sat
+    if (day === 0 || day === 6) return false;
+    var holidays = (settings && settings.holidays) || [];
+    return holidays.indexOf(ymd(d)) === -1;
+  }
+  function cutoffPassedToday(settings){
+    var now = nowInTrinidad();
+    settings = settings || SD_DEFAULT_SETTINGS;
+    if (!isBusinessDay(now, settings)) return true; // nothing processes same-day on a non-business day
+    return hm(now) >= (settings.cutoffTime || '11:00');
+  }
+  function minutesUntilCutoff(settings){
+    var now = nowInTrinidad();
+    settings = settings || SD_DEFAULT_SETTINGS;
+    var cutoff = (settings.cutoffTime || '11:00').split(':');
+    var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), +cutoff[0], +cutoff[1], 0, 0);
+    return Math.round((target - now) / 60000);
+  }
+  // Walk forward `hours` worth of business-hour time from `fromDate`,
+  // skipping weekends/holidays and hours outside businessHours.
+  function addBusinessHours(fromDate, hours, settings){
+    settings = settings || SD_DEFAULT_SETTINGS;
+    var bh = settings.businessHours || SD_DEFAULT_SETTINGS.businessHours;
+    var startParts = bh.start.split(':').map(Number);
+    var endParts = bh.end.split(':').map(Number);
+    var cur = new Date(fromDate.getTime());
+    var remainingMin = Math.round(hours * 60);
+
+    function dayStart(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), startParts[0], startParts[1], 0, 0); }
+    function dayEnd(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), endParts[0], endParts[1], 0, 0); }
+    function nextBusinessDayStart(d){
+      var n = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, startParts[0], startParts[1], 0, 0);
+      while (!isBusinessDay(n, settings)) n = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, startParts[0], startParts[1], 0, 0);
+      return n;
+    }
+
+    // Snap the start point into business time.
+    if (!isBusinessDay(cur, settings)) { cur = nextBusinessDayStart(cur); }
+    else if (cur < dayStart(cur)) { cur = dayStart(cur); }
+    else if (cur >= dayEnd(cur)) { cur = nextBusinessDayStart(cur); }
+
+    while (remainingMin > 0) {
+      var endOfThisDay = dayEnd(cur);
+      var availableMin = Math.round((endOfThisDay - cur) / 60000);
+      if (remainingMin <= availableMin) {
+        cur = new Date(cur.getTime() + remainingMin * 60000);
+        remainingMin = 0;
+      } else {
+        remainingMin -= availableMin;
+        cur = nextBusinessDayStart(cur);
+      }
+    }
+    return cur;
+  }
+  // green/amber/red for a queue item's "next action due" timer.
+  function slaState(dueIso){
+    if (!dueIso) return 'green';
+    var due = new Date(dueIso);
+    var now = nowInTrinidad();
+    var minsLeft = (due - now) / 60000;
+    if (minsLeft < 0) return 'red';
+    if (minsLeft <= 120) return 'amber'; // within 2 hours of due
+    return 'green';
+  }
+
+  // ---- local id/ref generator: ARAL-YYMM-#### ----
+  function nextSubmissionId(existingIds){
+    var now = nowInTrinidad();
+    var stamp = String(now.getFullYear()).slice(2) + String(now.getMonth()+1).padStart(2,'0');
+    var prefix = 'ARAL-' + stamp + '-';
+    var maxSeq = 0;
+    (existingIds || []).forEach(function(id){
+      if (id && id.indexOf(prefix) === 0) {
+        var n = parseInt(id.slice(prefix.length), 10);
+        if (!isNaN(n) && n > maxSeq) maxSeq = n;
+      }
+    });
+    return prefix + String(maxSeq + 1).padStart(4, '0');
+  }
+
+  // ---- LocalDemoAdapter: everything lives in localStorage. No
+  // network calls. This is what the prototype runs on by default. ----
+  var SD_LOCAL_KEY = 'genassist_sd_v1';
+  function sdLoadStore(){
+    try {
+      var raw = localStorage.getItem(SD_LOCAL_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return { submissions: [], events: [], agents: [], settings: {} };
+  }
+  function sdSaveStore(store){
+    localStorage.setItem(SD_LOCAL_KEY, JSON.stringify(store));
+  }
+  function sdSeedAgentsIfEmpty(store){
+    if (store.agents && store.agents.length) return;
+    store.agents = [
+      { code: 'ADMIN1', pin: '0000', name: 'System Admin', branch: 'Head Office', role: 'admin', active: true },
+      { code: 'BO1', pin: '1111', name: 'Back Office Desk', branch: 'Port of Spain — Independence Sq.', role: 'backoffice', active: true },
+      { code: 'AG1', pin: '2222', name: 'J. Alexander', branch: 'Port of Spain — Independence Sq.', role: 'agent', active: true }
+    ];
+  }
+  var LocalDemoAdapter = {
+    init: function(){
+      var store = sdLoadStore();
+      sdSeedAgentsIfEmpty(store);
+      if (!store.settings || !Object.keys(store.settings).length) store.settings = Object.assign({}, SD_DEFAULT_SETTINGS);
+      sdSaveStore(store);
+      return Promise.resolve();
+    },
+    authenticateAgent: function(code, pin){
+      var store = sdLoadStore();
+      var agent = (store.agents || []).filter(function(a){ return a.code === code && a.pin === pin && a.active; })[0];
+      return Promise.resolve(agent ? { ok: true, agent: { code: agent.code, name: agent.name, branch: agent.branch, role: agent.role } } : { ok: false, error: 'Invalid code or PIN' });
+    },
+    listSubmissions: function(filter){
+      var store = sdLoadStore();
+      var rows = store.submissions || [];
+      filter = filter || {};
+      Object.keys(filter).forEach(function(k){
+        if (filter[k]) rows = rows.filter(function(r){ return r[k] === filter[k]; });
+      });
+      return Promise.resolve(rows);
+    },
+    getSubmission: function(id){
+      var store = sdLoadStore();
+      var row = (store.submissions || []).filter(function(r){ return r.id === id; })[0];
+      return Promise.resolve(row || null);
+    },
+    createSubmission: function(data){
+      var store = sdLoadStore();
+      var id = nextSubmissionId((store.submissions || []).map(function(r){ return r.id; }));
+      var now = new Date().toISOString();
+      var settings = Object.assign({}, SD_DEFAULT_SETTINGS, store.settings || {});
+      var cutoffApplies = !!data.cutoffApplies;
+      var slaDue = addBusinessHours(nowInTrinidad(), settings.ackSlaHours || 2, settings);
+      var record = Object.assign({
+        id: id,
+        status: 'Submitted',
+        createdAt: now,
+        updatedAt: now,
+        submittedAt: now,
+        cutoffApplied: cutoffApplies && cutoffPassedToday(settings),
+        slaAcknowledgeDue: slaDue.toISOString(),
+        owner: '',
+        nextAction: 'Acknowledge',
+        nextActionDue: slaDue.toISOString(),
+        offSystem: false
+      }, data, { id: id });
+      store.submissions = store.submissions || [];
+      store.submissions.push(record);
+      sdSaveStore(store);
+      return Promise.resolve(record);
+    },
+    updateSubmission: function(id, patch){
+      var store = sdLoadStore();
+      var idx = (store.submissions || []).findIndex(function(r){ return r.id === id; });
+      if (idx === -1) return Promise.resolve(null);
+      store.submissions[idx] = Object.assign({}, store.submissions[idx], patch, { updatedAt: new Date().toISOString() });
+      sdSaveStore(store);
+      return Promise.resolve(store.submissions[idx]);
+    },
+    logOffSystemSubmission: function(data){
+      return this.createSubmission(Object.assign({}, data, { offSystem: true }));
+    },
+    addEvent: function(submissionId, event){
+      var store = sdLoadStore();
+      var rec = Object.assign({ id: 'EV-' + Date.now() + '-' + Math.floor(Math.random()*1000), submissionId: submissionId, createdAt: new Date().toISOString() }, event);
+      store.events = store.events || [];
+      store.events.push(rec);
+      sdSaveStore(store);
+      return Promise.resolve(rec);
+    },
+    listEvents: function(submissionId){
+      var store = sdLoadStore();
+      var rows = (store.events || []).filter(function(r){ return r.submissionId === submissionId; });
+      rows.sort(function(a,b){ return new Date(a.createdAt) - new Date(b.createdAt); });
+      return Promise.resolve(rows);
+    },
+    listAgents: function(){
+      var store = sdLoadStore();
+      return Promise.resolve((store.agents || []).map(function(a){ return { code: a.code, name: a.name, branch: a.branch, role: a.role, active: a.active }; }));
+    },
+    getSettings: function(){
+      var store = sdLoadStore();
+      return Promise.resolve(Object.assign({}, SD_DEFAULT_SETTINGS, store.settings || {}));
+    },
+    updateSettings: function(patch){
+      var store = sdLoadStore();
+      store.settings = Object.assign({}, SD_DEFAULT_SETTINGS, store.settings || {}, patch);
+      sdSaveStore(store);
+      return Promise.resolve(store.settings);
+    },
+    uploadFile: function(submissionId, fileMeta){
+      // Local demo: just remember the file's name + a data URL so it can
+      // still be viewed in this browser tab. No real storage/Drive involved.
+      return Promise.resolve({ name: fileMeta.name, url: fileMeta.dataUrl || '' });
+    }
+  };
+
+  // ---- AppsScriptAdapter: same interface, talks to a deployed Apps
+  // Script Web App (see SETUP.md for how non-developers deploy one). ----
+  function sdCallAppsScript(action, payload){
+    if (!SD_CONFIG.APPS_SCRIPT_URL) return Promise.resolve({ ok: false, error: 'APPS_SCRIPT_URL is not configured yet (see SETUP.md).' });
+    return fetch(SD_CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight against Apps Script
+      body: JSON.stringify({ action: action, payload: payload || {} })
+    }).then(function(r){ return r.json(); }).catch(function(err){ return { ok: false, error: String(err) }; });
+  }
+  var AppsScriptAdapter = {
+    init: function(){ return Promise.resolve(); },
+    authenticateAgent: function(code, pin){ return sdCallAppsScript('auth.login', { code: code, pin: pin }); },
+    listSubmissions: function(filter){ return sdCallAppsScript('submissions.list', { filter: filter || {} }).then(function(r){ return r.ok ? r.data : []; }); },
+    getSubmission: function(id){ return sdCallAppsScript('submissions.get', { id: id }).then(function(r){ return r.ok ? r.data : null; }); },
+    createSubmission: function(data){ return sdCallAppsScript('submissions.create', { data: data }).then(function(r){ return r.ok ? r.data : null; }); },
+    updateSubmission: function(id, patch){ return sdCallAppsScript('submissions.update', { id: id, patch: patch }).then(function(r){ return r.ok ? r.data : null; }); },
+    logOffSystemSubmission: function(data){ return sdCallAppsScript('submissions.logOffSystem', { data: data }).then(function(r){ return r.ok ? r.data : null; }); },
+    addEvent: function(submissionId, event){ return sdCallAppsScript('events.add', { submissionId: submissionId, event: event }).then(function(r){ return r.ok ? r.data : null; }); },
+    listEvents: function(submissionId){ return sdCallAppsScript('events.list', { submissionId: submissionId }).then(function(r){ return r.ok ? r.data : []; }); },
+    listAgents: function(){ return sdCallAppsScript('agents.list', {}).then(function(r){ return r.ok ? r.data : []; }); },
+    getSettings: function(){ return sdCallAppsScript('settings.get', {}).then(function(r){ return r.ok ? Object.assign({}, SD_DEFAULT_SETTINGS, r.data) : SD_DEFAULT_SETTINGS; }); },
+    updateSettings: function(patch){ return sdCallAppsScript('settings.update', { patch: patch }).then(function(r){ return r.ok ? r.data : null; }); },
+    uploadFile: function(submissionId, fileMeta){
+      return sdCallAppsScript('files.upload', { submissionId: submissionId, name: fileMeta.name, mime: fileMeta.mime, dataBase64: fileMeta.dataBase64 }).then(function(r){ return r.ok ? r.data : null; });
+    }
+  };
+
+  var dataLayer = SD_CONFIG.backend === 'appsscript' ? AppsScriptAdapter : LocalDemoAdapter;
+  dataLayer.init();
+
+  // ---- demo client data lives behind an explicit "Load demo" action
+  // (wired up in the Submission Desk UI) — nothing below seeds it
+  // automatically, so the app starts empty for a real agent. ----
+  function sdLoadDemoData(){
+    return dataLayer.listSubmissions({}).then(function(existing){
+      if (existing && existing.length) return existing; // don't duplicate if already loaded
+      return dataLayer.createSubmission({
+        product: 'motor',
+        subtype: 'Comprehensive',
+        agentCode: 'AG1',
+        agentName: 'J. Alexander',
+        branch: 'Port of Spain — Independence Sq.',
+        clientName: 'Marlene K. Ramsingh',
+        clientPhone: '(868) 555-0142',
+        clientEmail: 'marlene.ramsingh@example.com',
+        formData: JSON.stringify({ makeModel: 'Toyota Aqua, 2019', regNo: 'PDF 4021' }),
+        documents: JSON.stringify([]),
+        cutoffApplies: true
+      }).then(function(sub){
+        return dataLayer.addEvent(sub.id, { type: 'status_change', actor: 'J. Alexander', text: 'Demo submission created for walkthrough purposes.' }).then(function(){ return [sub]; });
+      });
+    });
+  }
+  function sdClearDemoData(){
+    var store = sdLoadStore();
+    store.submissions = [];
+    store.events = [];
+    sdSaveStore(store);
+  }
+
   document.getElementById('todayDate').value = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,' / ');
 
   // ---- info popovers (click / tap to open, tap outside to close) ----
