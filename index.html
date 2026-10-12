@@ -3474,6 +3474,17 @@
         var r = sdFormReadiness(pr3.readyTextId);
         if (pr3.formPanelId && !r.done) { sdShowModal('Form not finished yet', '<p>Only ' + r.have + ' of ' + r.need + ' key items on the ' + sdEsc(pr3.label) + ' form are filled in. Open the form and finish those before continuing.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]); return; }
         if (!pr3.formPanelId && !sdWizard.notes.trim()) { sdShowModal('Add a note', '<p>Describe what is needed for back office before continuing.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]); return; }
+        if (pr3.requiredDocs && pr3.requiredDocs.length) {
+          var missingDocs = pr3.requiredDocs.filter(function(_, i){ return !sdWizard.docChecks[i]; });
+          if (missingDocs.length) {
+            sdShowModal('Documents still needed', '<p>Tick off each document once you have it, and attach at least one photo/scan. Still missing:</p><ul style="margin:8px 0 0 18px;padding:0;font-size:13px;">' + missingDocs.map(function(d){ return '<li>' + sdEsc(d) + '</li>'; }).join('') + '</ul>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]);
+            return;
+          }
+          if (!sdWizard.documents.length) {
+            sdShowModal('Attach your documents', '<p>All required documents are ticked, but nothing has been attached yet. Use the dropzone to add at least one photo or scan before continuing.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]);
+            return;
+          }
+        }
         sdWizard.step = 4; sdWizardSaveDraft(); sdWizardRenderStep();
       });
       return;
