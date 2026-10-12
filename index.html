@@ -308,6 +308,11 @@
     <button class="formtab" data-form="condition"><span>Condition Questionnaire</span><span class="tabsub">TATIL Life — multiple forms</span></button>
     <button class="formtab" data-form="quotation"><span>Quotation Builder</span><span class="tabsub">Extract &amp; copy out</span></button>
     <button class="formtab" data-form="conversion"><span>Motor Conversion</span><span class="tabsub">Insurer-to-insurer switch</span></button>
+    <button class="formtab" data-form="motorproposal"><span>Motor Insurance Proposal</span><span class="tabsub">Your TATIL form</span></button>
+    <button class="formtab" data-form="homesure"><span>Homesure Proposal</span><span class="tabsub">Your TATIL form &middot; Residential</span></button>
+    <button class="formtab" data-form="fireproposal"><span>Fire Insurance Proposal</span><span class="tabsub">Your TATIL form &middot; Commercial</span></button>
+    <button class="formtab" data-form="motorclaim"><span>Motor Claim</span><span class="tabsub">Your TATIL form</span></button>
+    <button class="formtab" data-form="propertyclaim"><span>Property Claim</span><span class="tabsub">Your TATIL form</span></button>
   </div>
 
   <div class="workspace">
@@ -1986,6 +1991,26 @@
       <div id="achcancel-mount"></div>
     </div>
 
+    <div class="formview" id="form-motorproposal">
+      <div id="mp-mount"></div>
+    </div>
+
+    <div class="formview" id="form-homesure">
+      <div id="hs-mount"></div>
+    </div>
+
+    <div class="formview" id="form-fireproposal">
+      <div id="fp-mount"></div>
+    </div>
+
+    <div class="formview" id="form-motorclaim">
+      <div id="mc-mount"></div>
+    </div>
+
+    <div class="formview" id="form-propertyclaim">
+      <div id="pc-mount"></div>
+    </div>
+
     <div class="formview" id="form-amendment">
 
       <section class="ledger-section">
@@ -2698,6 +2723,28 @@
       {ask:'Why is the NCD letter mandatory on a conversion?', label:'Why is the NCD letter mandatory?'},
       {ask:'What is Corporate KYC and when do I need it instead of individual KYC?', label:'When do I need Corporate KYC?'},
       {ask:'Why does the coverage type on this tab not match the Proposal form exactly?', label:'Why doesn\'t coverage type match?'}
+    ]},
+    motorproposal: { eyebrow: 'TATIL · Proposal for Motor Insurance', chips: [
+      {ask:'What counts as a No-Claims Discount here?', label:'Explain NCD'},
+      {ask:'Why does Memo 1 matter for authorized drivers?', label:'Explain Memo 1'},
+      {ask:'When do the commercial-use supplementary questions apply?', label:'When do Qs 13–16 apply?'}
+    ]},
+    homesure: { eyebrow: 'TATIL Homesure · Residential Property Proposal', chips: [
+      {ask:'What is the difference between insuring Building and insuring Contents?', label:'Building vs. Contents?'},
+      {ask:'What does reinstatement as new mean?', label:'Explain reinstatement as new'},
+      {ask:'When is the All Risks section available?', label:'When is All Risks available?'}
+    ]},
+    fireproposal: { eyebrow: 'TATIL · Proposal for Fire Insurance (Commercial)', chips: [
+      {ask:'What special perils can I select on this form?', label:'Explain special perils'},
+      {ask:'Why does the form ask if stock records are computerized?', label:'Why ask about stock records?'}
+    ]},
+    motorclaim: { eyebrow: 'TATIL · Motor Vehicle Accident Report Form', chips: [
+      {ask:'What documents does the back office need to send this to a claims adjuster?', label:'What documents are needed?'},
+      {ask:'Why does the form ask for the driver\'s relation to the insured?', label:'Why ask driver\'s relation?'}
+    ]},
+    propertyclaim: { eyebrow: 'TATIL · Loss of or Damage to Property Claim', chips: [
+      {ask:'What counts as proof of ownership for a claimed item?', label:'What proves ownership?'},
+      {ask:'Why does the form ask about other insurance on the same property?', label:'Why ask about other insurance?'}
     ]}
   };
 
@@ -3682,6 +3729,9 @@
     var labelHtml = f.label ? '<label>' + f.label + tipHtml + '</label>' : '';
     if (f.type === 'text' || f.type === 'date') {
       field.innerHTML = labelHtml + '<input type="text"' + (f.type === 'date' || f.mono ? ' class="mono"' : '') + ' id="' + id + '"' + (f.placeholder ? ' placeholder="' + f.placeholder + '"' : '') + (f.value ? ' value="' + f.value + '"' : '') + '>';
+    } else if (f.type === 'select') {
+      var optsHtml = '<option value="">Select&hellip;</option>' + (f.options || []).map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
+      field.innerHTML = labelHtml + '<select id="' + id + '">' + optsHtml + '</select>';
     } else if (f.type === 'checkbox') {
       field.innerHTML = '<label style="flex-direction:row;align-items:center;gap:8px;"><input type="checkbox" id="' + id + '" style="width:auto;"> ' + f.label + '</label>';
     } else if (f.type === 'yesno') {
@@ -3762,7 +3812,7 @@
         });
       } else {
         var el = document.getElementById(prefix + '-' + f.id);
-        if (el) el.addEventListener(f.type === 'checkbox' ? 'change' : 'input', function(){ recomputeAll(); updateReady(); });
+        if (el) el.addEventListener((f.type === 'checkbox' || f.type === 'select') ? 'change' : 'input', function(){ recomputeAll(); updateReady(); });
       }
     });
     recomputeAll(); updateReady();
@@ -3828,6 +3878,480 @@
     ]
   };
   renderFormSchema(achCancelSchema, document.getElementById('achcancel-mount'));
+
+  // ==================== Proposal for Motor Insurance (TATIL — real product form) ====================
+  var motorProposalSchema = {
+    id: 'mp',
+    title: 'Proposal for Motor Insurance',
+    readyFields: ['fullName', 'dob', 'regNo', 'makeModel', 'coverType', 'declSignature'],
+    captionField: 'fullName',
+    protoNote: 'Built directly from TATIL\'s real "Proposal for Motor Insurance" form &mdash; using generic placeholder data, not a real client\'s answers.',
+    sections: [
+      { num:'1', title:'Proposer Details', note:'Please give complete answers &mdash; no blanks or dashes.', fields:[
+        { type:'text', id:'fullName', label:'Full name', width:'half' },
+        { type:'date', id:'dob', label:'Date of birth', width:'half' },
+        { type:'select', id:'gender', label:'Gender', options:['Male','Female'], width:'third' },
+        { type:'select', id:'maritalStatus', label:'Marital status', options:['Single','Married','Other'], width:'third' },
+        { type:'text', id:'occupation', label:'Business / profession (please be specific)', width:'third' },
+        { type:'text', id:'postalAddress', label:'Postal address' },
+        { type:'text', id:'email', label:'Email address', width:'half' },
+        { type:'text', id:'phone', label:'Telephone no. (home / cell)', width:'half' },
+        { type:'text', id:'overnightAddress', label:'Address where vehicle is normally kept overnight' },
+        { type:'select', id:'overnightLocation', label:'Where is the vehicle kept overnight?', options:['Locked Garage','Fenced Compound','Other'], width:'half' },
+        { type:'text', id:'overnightOther', label:'If "Other", please specify', width:'half' },
+        { type:'text', id:'employer', label:'Name of employer', width:'half' },
+        { type:'text', id:'employerPhone', label:'Employer telephone no.', width:'half' },
+        { type:'date', id:'coverFrom', label:'Insurance coverage required from', width:'half' },
+        { type:'date', id:'coverTo', label:'to', width:'half' },
+        { type:'select', id:'coverType', label:'Type of coverage required', options:['Comprehensive','Third Party, Fire and Theft','Third Party Only'] }
+      ]},
+      { num:'2', title:'Particulars of Vehicle to Be Insured', fields:[
+        { type:'text', id:'regNo', label:'a. Registration no.', width:'third' },
+        { type:'text', id:'engineNo', label:'b. Engine no.', width:'third' },
+        { type:'text', id:'chassisNo', label:'c. Chassis no.', width:'third' },
+        { type:'text', id:'makeModel', label:'Make, type or model of vehicle', width:'half' },
+        { type:'text', id:'hpRating', label:'H/P or C.C. rating', width:'half' },
+        { type:'text', id:'yearMake', label:'Year of make', width:'third' },
+        { type:'select', id:'vehicleCondition', label:'New / second hand / foreign used', options:['New','Second Hand','Foreign Used'], width:'third' },
+        { type:'text', id:'pricePaid', label:'Price paid & date purchased', width:'third' },
+        { type:'text', id:'seatingCapacity', label:'Seating capacity (inc. driver)', width:'half' },
+        { type:'text', id:'estValue', label:'Proposer\'s estimate of present value & list of accessories/values', width:'half' },
+        { type:'callout', text:'<strong>Accessories not listed are not covered</strong>, except where manufacturer-installed.' },
+        { type:'yesno', id:'rollOnRollOff', label:'If foreign used &mdash; is the vehicle "roll on / roll off"?', defaultValue:'no' },
+        { type:'togglecallout', buttonLabel:'Anti-theft devices &mdash; what to capture', text:'Note which of these are fitted: (i) Immobiliser, (ii) Gear Stick Lock, (iii) Gas Lock, (iv) Alarm System, (v) Other &mdash; and capture the make &amp; model of each fitted device below.' },
+        { type:'checkbox', id:'antiTheftImmobiliser', label:'Immobiliser fitted', width:'third' },
+        { type:'checkbox', id:'antiTheftGearLock', label:'Gear stick lock fitted', width:'third' },
+        { type:'checkbox', id:'antiTheftGasLock', label:'Gas lock fitted', width:'third' },
+        { type:'checkbox', id:'antiTheftAlarm', label:'Alarm system fitted', width:'half' },
+        { type:'text', id:'antiTheftOther', label:'Other device &mdash; type / make / model', width:'half' },
+        { type:'text', id:'antiTheftDetails', label:'Make & model of fitted devices' }
+      ]},
+      { num:'3', title:'Claims History & Driving Record', fields:[
+        { type:'yesno', id:'modified', label:'1. Has the vehicle been modified, altered or adapted to carry a load heavier than the maker\'s published specification?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'modifiedDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'socialUseOnly', label:'2a. Will the vehicle be used solely for social, domestic & pleasure purposes and in connection with your business?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'socialUseOtherDetails', label:'If "No" &mdash; state fully what purposes the vehicle will be used for' } ] } },
+        { type:'yesno', id:'competitionUse', label:'2b. Will the vehicle be used in competitions, rallies, trials or hill climbs?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'competitionDetails', label:'Please give details' } ] } },
+        { type:'text', id:'pastAccidents', label:'3. After enquiry and to the best of your knowledge, what accidents has the vehicle met with?' },
+        { type:'yesno', id:'previouslyInsured', label:'4a. Are you now or have you previously been insured for any motor vehicle, within the last 4 years?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'previousInsurer', label:'State name of company or underwriter' } ] } },
+        { type:'yesno', id:'ncdEntitled', label:'4b. Are you entitled to a No Claims Discount from your previous insurers?', defaultValue:'no' },
+        { type:'computed', id:'ncdFlag', compute:function(get){
+            if (get('ncdEntitled') !== 'yes') return null;
+            return { variant:'flag', text:'If "Yes" to the No Claims Discount question, attach the client\'s current renewal notice or No Claim Discount letter to the submission &mdash; back-office can\'t apply the discount without it.' };
+          }
+        },
+        { type:'yesno', id:'declinedBefore', label:'4c. Has any Company or Underwriter ever declined, cancelled or refused your proposal, or imposed special conditions / an increased excess?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'declinedDetails', label:'Please give details' } ] } },
+        { type:'text', id:'licenceYears', label:'5a. How many years have you held a driver\'s licence?', width:'third' },
+        { type:'text', id:'licenceNo', label:'Licence no.', width:'third' },
+        { type:'date', id:'licenceDateIssued', label:'Date issued', width:'third' },
+        { type:'text', id:'licenceClass', label:'Class', width:'half' },
+        { type:'text', id:'vehiclesOwned4yrs', label:'6. Total number of vehicles owned during the past 4 years', width:'half' },
+        { type:'yesno', id:'soleDriver', label:'7. Will the vehicle be driven solely by you?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'table', columns:['Full Name','Date of Birth','Occupation','Licence No.','Date Issued','Class'], rows:2 } ] } },
+        { type:'callout', variant:'warn', text:'<strong>MEMO 1:</strong> Unless specifically stated otherwise, the liability of the Company shall not attach to any authorized driver under the age of twenty-five (25) years or holding a driver\'s licence for less than two (2) years.' },
+        { type:'table', columns:['Year','Number of Accidents','Cost (paid or estimated)','Nature of payment (e.g. own damage, third party)'], rows:3 },
+        { type:'yesno', id:'convicted', label:'9. Have you or any other person who will drive the vehicle been convicted during the past 5 years for any motor vehicle offence?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'convictedDetails', label:'Please give full particulars (including any prosecutions pending)' } ] } },
+        { type:'yesno', id:'medicalInfirmity', label:'10. Do you or any other driver suffer from defective vision or hearing, or from any physical or mental infirmity or disease?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'infirmityDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'soleOwner', label:'11a. Are you the sole owner of the vehicle and is it registered in your name?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'soleOwnerDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'financed', label:'11b. Is the vehicle subject to a mortgage, Hire Purchase arrangement or bill of sale?', defaultValue:'no',
+          detail:{ fields:[
+            { type:'text', id:'mortgageeName', label:'Name of mortgagee', width:'half' },
+            { type:'text', id:'mortgageeAddress', label:'Mortgagee address', width:'half' }
+          ]} }
+      ]},
+      { num:'4', title:'Policy Extensions', note:'Which extensions does the client require?', fields:[
+        { type:'checkbox', id:'extWindscreenStandard', label:'Windscreen &mdash; Standard Limit ($2,000)', width:'half' },
+        { type:'text', id:'extWindscreenOtherLimit', label:'Or other limit required ($)', width:'half' },
+        { type:'checkbox', id:'extSpecialPerils', label:'Special Perils (Flood, Earthquake, Hurricane)', width:'half' },
+        { type:'checkbox', id:'extPersonalAccident', label:'Personal Accident', width:'half' },
+        { type:'text', id:'extOther', label:'Other policy extension' }
+      ]},
+      { num:'5', title:'Commercial-Use Supplementary Questions (13&ndash;16)', note:'Only required if the vehicle is used for commercial purposes.', fields:[
+        { type:'callout', text:'NOTE: if the vehicle is used for commercial purposes, these supplementary questions must be answered.' },
+        { type:'text', id:'goodsNature', label:'13a. If used for carriage of goods &mdash; what is their general nature?' },
+        { type:'yesno', id:'cartageOthers', label:'13b. Do you undertake cartage for other persons?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'cartageDetails', label:'Please give details' } ] } },
+        { type:'text', id:'tareWeight', label:'13c. Tare weight', width:'half' },
+        { type:'text', id:'grossWeight', label:'Gross weight', width:'half' },
+        { type:'yesno', id:'passengersHire', label:'14a. If used for carrying passengers &mdash; are they carried for hire or reward?', defaultValue:'no' },
+        { type:'yesno', id:'privateHire', label:'14b. Will the vehicle be used for Private Hire?', defaultValue:'no' },
+        { type:'yesno', id:'nonFarepayingLiability', label:'14c. Do you wish to insure your liability for carriage of non-farepaying passengers?', defaultValue:'no' },
+        { type:'yesno', id:'solelyEmployeeDriven', label:'15. Will the vehicle be driven solely by you?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'numEmployeesLicensed', label:'State total number of employees licensed to drive' } ] } },
+        { type:'yesno', id:'trailerUsed', label:'16. Will a trailer or trailers be used?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'trailerDetails', label:'Please give details' } ] } }
+      ]},
+      { num:'&#10003;', title:'Declaration', fields:[
+        { type:'callout', text:'I hereby warrant the truth of the above statements (and, for commercial-purpose vehicles, the statements following). I declare that I have withheld no information whatever which might tend in any way to increase the risk of the company, or influence the acceptance of this Proposal. I agree that this Proposal shall be the basis of the Contract between me and Trinidad and Tobago Insurance Limited, and I further agree to accept a Policy subject to its conditions.' },
+        { type:'text', id:'declSignature', label:'Signature of proposer (type full name to confirm)', width:'half' },
+        { type:'date', id:'declDate', label:'Date of proposal and declaration', width:'half' }
+      ]}
+    ]
+  };
+  renderFormSchema(motorProposalSchema, document.getElementById('mp-mount'));
+
+  // ==================== Homesure Proposal (TATIL — real product form, residential) ====================
+  var homesureSchema = {
+    id: 'hs',
+    title: 'Homesure Proposal',
+    readyFields: ['fullName', 'dwellingAddress', 'declSignature'],
+    captionField: 'fullName',
+    protoNote: 'Built directly from TATIL\'s real "Homesure Proposal" form &mdash; using generic placeholder data, not a real client\'s answers. Covers Building, Contents, All Risks and Personal Accident sections.',
+    sections: [
+      { num:'1', title:'Proposer & Dwelling', fields:[
+        { type:'text', id:'fullName', label:'Full name', width:'half' },
+        { type:'text', id:'occupation', label:'Occupation', width:'half' },
+        { type:'text', id:'address', label:'Address' },
+        { type:'text', id:'dwellingAddress', label:'Address of dwelling to be insured' },
+        { type:'text', id:'phoneHome', label:'Telephone (home)', width:'third' },
+        { type:'text', id:'phoneOffice', label:'Telephone (office)', width:'third' },
+        { type:'text', id:'email', label:'Email', width:'third' },
+        { type:'date', id:'coverFrom', label:'Insurance required from', width:'half' },
+        { type:'date', id:'coverTo', label:'to', width:'half' }
+      ]},
+      { num:'2', title:'General Questions', note:'Applicable to all sections.', fields:[
+        { type:'callout', text:'The circumstances of each proposer are different and no list of questions can be exhaustive. Any other material information known to the client should be disclosed &mdash; not disclosing it, even by mistake, could invalidate the policy.' },
+        { type:'yesno', id:'builtOfBrickStoneConcrete', label:'1a(i). Is the dwelling built of brick, stone or concrete?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'constructionDetails', label:'If no, please give details' } ] } },
+        { type:'yesno', id:'roofedSlatesTilesMetal', label:'1a(ii). Roofed with slates, tiles, metal, asphalt or concrete?', defaultValue:'yes' },
+        { type:'yesno', id:'standingOnPillars', label:'1a(iii). Standing on pillars?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'pillarHeight', label:'Height of pillars' } ] } },
+        { type:'yesno', id:'singleStory', label:'1a(iv). A single-story building?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'numStories', label:'Number of stories' } ] } },
+        { type:'yesno', id:'flooredConcrete', label:'1a(v). Floored with concrete?', defaultValue:'yes' },
+        { type:'select', id:'innerWallMaterial', label:'1b. Are the inner walls made of timber, concrete, or other?', options:['Timber','Concrete','Other'], width:'half' },
+        { type:'yesno', id:'outbuildingsSameConstruction', label:'1c. Are outbuildings constructed as in (a) and (b) above?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'outbuildingDetails', label:'If no, please give details' } ] } },
+        { type:'yesno', id:'businessUse', label:'2a. Will the dwelling be used for any business purposes?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'businessUseDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'tenantsUse', label:'2b. Used by tenants, sub-tenants or paying guests?', defaultValue:'no' },
+        { type:'yesno', id:'unoccupied40days', label:'2c. Left unoccupied for 40 days or more during any one period of insurance?', defaultValue:'no' },
+        { type:'yesno', id:'goodRepair', label:'3a. Is the dwelling in a good state of repair?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'repairDetails', label:'If no, please give particulars' } ] } },
+        { type:'yesno', id:'willBeMaintained', label:'3b. Will it be so maintained?', defaultValue:'yes' },
+        { type:'yesno', id:'priorPolicies', label:'4. Have you previously held, or do you have, any policies in force covering any of the perils to be insured?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'priorPoliciesDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'separateDwelling', label:'5. Is the dwelling a house and separate from other dwellings?', defaultValue:'yes',
+          detail:{ fields:[ { type:'text', id:'neighbouringDetails', label:'If no &mdash; distance, occupation and construction of neighbouring buildings' } ] } },
+        { type:'yesno', id:'declinedBefore', label:'6. Has any Company or Insurer declined to insure you, required special terms, or cancelled/refused to renew your insurance?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'declinedDetails', label:'Please give details' } ] } },
+        { type:'text', id:'buildingAge', label:'7. Approximate age of the building (years)', width:'half' },
+        { type:'yesno', id:'inLieuOfOther', label:'8. Is this proposal in lieu of any insurance with this or any other Company?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'inLieuDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'priorCatastropheDamage', label:'9. Have the Building and/or Contents suffered damage by earthquake, hurricane, windstorm, cyclone, tornado, volcanic eruption or flood during the past 5 years?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'catastropheDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'otherLossPast5yrs', label:'10. Have you sustained loss from any other peril (not in Q9) within the last 5 years?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'otherLossDetails', label:'Please give particulars' } ] } }
+      ]},
+      { num:'3', title:'Section 1 — Building', note:'Complete this section if insuring the Building.', fields:[
+        { type:'yesno', id:'insureBuilding', label:'Is the client insuring their Building (Section 1)?', defaultValue:'yes' },
+        { type:'yesno', id:'reinstatementAsNew', label:'11. Do you wish to insure for reinstatement as new?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'reinstatementFeesDetails', label:'Should the sum insured include architects\' and surveyors\' fees?' } ] } },
+        { type:'yesno', id:'subsidenceCover', label:'12. Do you wish to insure for damage to the Building resulting from Subsidence or Landslip?', defaultValue:'no',
+          detail:{ fields:[
+            { type:'text', id:'subsidenceDetails', label:'Have you sustained any loss from subsidence/landslip, and is the building on sloping land?' }
+          ]} },
+        { type:'yesno', id:'buildingMortgaged', label:'13. Is the building mortgaged?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'mortgageeName', label:'Name of mortgagee' } ] } },
+        { type:'text', id:'superficialArea', label:'14. Approximate superficial area of building (sq ft / m)', width:'half' },
+        { type:'text', id:'sumBuilding', label:'15a. Sum insured — Building (incl. walls, gates, fences)', width:'third' },
+        { type:'text', id:'sumRetainingWalls', label:'15b. Sum insured — Retaining walls', width:'third' },
+        { type:'text', id:'sumPool', label:'15c. Sum insured — Swimming pool & ancillary equipment', width:'third' },
+        { type:'text', id:'sumCarpets', label:'15d. Sum insured — Fitted (wall to wall) carpets', width:'third' },
+        { type:'text', id:'sumAC', label:'15e. Sum insured — Central air conditioning equipment', width:'third' },
+        { type:'text', id:'sumOtherBuilding', label:'15f. Sum insured — Other', width:'third' }
+      ]},
+      { num:'4', title:'Section 2 — Contents', note:'Complete this section if insuring Contents.', fields:[
+        { type:'yesno', id:'insureContents', label:'Is the client insuring their Contents (Section 2)?', defaultValue:'no' },
+        { type:'text', id:'sumContents', label:'16a. Sum insured — Contents (excl. electronic equipment)', width:'half' },
+        { type:'text', id:'sumElectronics', label:'16b. Sum insured — Computer, TV & other electronic equipment', width:'half' },
+        { type:'text', id:'sumJewellery', label:'16c. Sum insured — Jewellery', width:'half' },
+        { type:'text', id:'sumOtherSpecial', label:'16d. Sum insured — Any other special items', width:'half' },
+        { type:'yesno', id:'contentsReinstatement', label:'17. Do you wish to insure for reinstatement (full replacement value as new)?', defaultValue:'no' },
+        { type:'yesno', id:'ownBuilding', label:'18. Do you own the building?', defaultValue:'yes',
+          detail:{ fields:[ { type:'select', id:'furnishedLevel', label:'If yes — is it fully or semi-furnished?', options:['Fully furnished','Semi-furnished'] } ] } },
+        { type:'yesno', id:'burglaryProtected', label:'19. Are all openings protected from burglary by iron bars and/or steel grills?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'burglaryProtectionGap', label:'If no, please give details' } ] } },
+        { type:'text', id:'otherBurglaryProtection', label:'20. What other protection is there against loss by burglary?' }
+      ]},
+      { num:'5', title:'Section 3 — All Risks', note:'Available only if Contents cover is being taken.', fields:[
+        { type:'callout', text:'Please attach a list of items and valuations.' },
+        { type:'select', id:'territorialLimits', label:'21. What territorial limits do you require?', options:['Residence only','Trinidad & Tobago','West Indies','Worldwide'] },
+        { type:'yesno', id:'jewelleryInSafe', label:'22. Is jewellery kept in a safe or bank safe deposit box when not worn?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'jewelleryStorageDetails', label:'If no, please give details' } ] } },
+        { type:'yesno', id:'itemsUsedByOthers', label:'23. Will any of the items be used by anyone other than yourself or a family member living with you?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'itemsUsedByOthersDetails', label:'Which items, and by whom?' } ] } },
+        { type:'text', id:'propertyElsewhere', label:'24. If property is kept at premises other than stated on the schedule or bank safety deposit box, please specify' }
+      ]},
+      { num:'6', title:'Section 5 — Personal Accident', fields:[
+        { type:'yesno', id:'wantPersonalAccident', label:'25. Do you wish to insure for Personal Accident cover?', defaultValue:'no' },
+        { type:'checkbox', id:'paYourself', label:'Cover: Yourself', width:'half' },
+        { type:'text', id:'paYourAge', label:'Your age next birthday', width:'half' },
+        { type:'checkbox', id:'paSpouse', label:'Cover: Spouse', width:'half' },
+        { type:'text', id:'paSpouseAge', label:'Spouse\'s age next birthday', width:'half' }
+      ]},
+      { num:'&#10003;', title:'Declaration', fields:[
+        { type:'callout', text:'I/We declare that to the best of my/our belief the answers given are true and all material information as explained above has been disclosed. I/We agree that if any answer has been written by any other person, that person shall for that purpose be regarded as my/our agent and not the agent of the Insurers. This proposal is for insurance on the normal terms and conditions of the Insurers\' policy and shall be incorporated and form the basis of the Insurance contract.' },
+        { type:'callout', variant:'warn', text:'This insurance will not commence until the Insurers have indicated their acceptance of the Proposal.' },
+        { type:'text', id:'declSignature', label:'Signature of proposer(s) (type full name to confirm)', width:'half' },
+        { type:'date', id:'declDate', label:'Date', width:'half' }
+      ]}
+    ]
+  };
+  renderFormSchema(homesureSchema, document.getElementById('hs-mount'));
+
+  // ==================== Proposal for Fire Insurance (TATIL — real product form, commercial) ====================
+  var fireProposalSchema = {
+    id: 'fp',
+    title: 'Proposal for Fire Insurance',
+    readyFields: ['fullName', 'premisesSituation', 'declSignature'],
+    captionField: 'fullName',
+    protoNote: 'Built directly from TATIL\'s real commercial "Proposal for Fire Insurance" form &mdash; using generic placeholder data, not a real client\'s answers.',
+    sections: [
+      { num:'1', title:'Proposer Details', fields:[
+        { type:'text', id:'fullName', label:'Full name', width:'half' },
+        { type:'text', id:'natureOfBusiness', label:'Nature of your business (e.g. Boutique, Garment Factory) &mdash; please be specific', width:'half' },
+        { type:'text', id:'postalAddress', label:'Postal address' },
+        { type:'text', id:'phoneHome', label:'Telephone (H)', width:'third' },
+        { type:'text', id:'phoneWork', label:'Telephone (W)', width:'third' },
+        { type:'text', id:'phoneCell', label:'Telephone (C)', width:'third' },
+        { type:'text', id:'email', label:'Email', width:'half' },
+        { type:'text', id:'premisesSituation', label:'Situation of premises to be insured' },
+        { type:'date', id:'coverFrom', label:'Insurance coverage required from', width:'half' },
+        { type:'date', id:'coverTo', label:'to', width:'half' }
+      ]},
+      { num:'2', title:'Special Perils & Values to Be Insured', fields:[
+        { type:'checkbox', id:'perilAll', label:'All', width:'third' },
+        { type:'checkbox', id:'perilFireLightning', label:'Fire & Lightning Only', width:'third' },
+        { type:'checkbox', id:'perilEarthquakeHurricane', label:'Earthquake & Hurricane', width:'third' },
+        { type:'checkbox', id:'perilRiotStrike', label:'Riot & Strike', width:'third' },
+        { type:'checkbox', id:'perilMaliciousDamage', label:'Malicious Damage', width:'third' },
+        { type:'checkbox', id:'perilFlood', label:'Flood', width:'third' },
+        { type:'text', id:'valueBuilding', label:'1. Building/s &mdash; value', width:'third' },
+        { type:'text', id:'valueStock', label:'2. Stock (comprising principally of &hellip;) &mdash; value', width:'third' },
+        { type:'text', id:'valueMachinery', label:'3. Machinery & Equipment &mdash; value', width:'third' },
+        { type:'text', id:'valueFurniture', label:'4. Furniture, Fixtures & Fittings, all other contents &mdash; value', width:'third' },
+        { type:'text', id:'valueRentalLoss', label:'5. Loss of Rental Income (state no. of months) &mdash; value', width:'third' },
+        { type:'text', id:'valueOther', label:'6. Other (please specify) &mdash; value', width:'third' },
+        { type:'text', id:'valueTotal', label:'Total values to be insured' }
+      ]},
+      { num:'3', title:'Stock Records', note:'7. Complete only if stock is being insured.', fields:[
+        { type:'yesno', id:'stockRecordsKept', label:'i. Do you keep records of stock?', defaultValue:'yes' },
+        { type:'yesno', id:'stockRecordsPostedPromptly', label:'ii. Are these posted promptly?', defaultValue:'yes' },
+        { type:'yesno', id:'stockRecordsComputerized', label:'iii. Are the records computerized?', defaultValue:'yes' },
+        { type:'yesno', id:'stockOffsiteStorage', label:'iv. If yes, is there any off-site storage of records?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'offsiteDetails', label:'Please specify' } ] } }
+      ]},
+      { num:'4', title:'Particulars of the Building', fields:[
+        { type:'text', id:'roofType', label:'8. Roof (e.g. galvanize, concrete, shingles)', width:'half' },
+        { type:'text', id:'flooringType', label:'9. Flooring (e.g. timber, concrete)', width:'half' },
+        { type:'text', id:'externalWalls', label:'10. External walls', width:'half' },
+        { type:'text', id:'internalWalls', label:'11. Internal walls / partitioning', width:'half' },
+        { type:'text', id:'numStories', label:'12. Number of stories', width:'half' },
+        { type:'text', id:'buildingOwner', label:'13. By whom is the building owned?', width:'half' },
+        { type:'text', id:'occupiedByWhomPurpose', label:'14. For what purpose and by whom is/are the building(s) occupied?' },
+        { type:'text', id:'neighbouringConstruction', label:'15. Construction & occupancy of detachments or neighbouring premises within 15 feet' }
+      ]},
+      { num:'5', title:'Further Details', fields:[
+        { type:'yesno', id:'stockElsewhere', label:'16. Do you keep stock or other items to be insured at any other location?', defaultValue:'no',
+          detail:{ fields:[
+            { type:'text', id:'stockElsewhereAddress', label:'Address', width:'half' },
+            { type:'text', id:'stockElsewhereValue', label:'Value ($)', width:'half' }
+          ]} },
+        { type:'yesno', id:'hazardousGoodsStored', label:'17. Are any explosives, oils, spirits or hazardous goods stored on the premises or any other premises less than 15ft away?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'hazardousGoodsDetails', label:'Description, quantity and method of storage' } ] } },
+        { type:'yesno', id:'mortgaged', label:'18. Is the property subject to a mortgage or other finance arrangement?', defaultValue:'no',
+          detail:{ fields:[
+            { type:'text', id:'mortgageeName', label:'Name of mortgagee', width:'half' },
+            { type:'text', id:'mortgageeAddress', label:'Address', width:'half' }
+          ]} },
+        { type:'yesno', id:'priorLoss', label:'19. Has the building ever sustained any loss from any of the perils to be insured against?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'priorLossDetails', label:'Type, amount and date' } ] } },
+        { type:'yesno', id:'executiveLossOrDecline', label:'20. Have you or any of your Executive Directors ever (a) suffered any loss at any location from any insured peril, or (b) had any application for insurance declined or cancelled by any insurer?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'executiveLossDetails', label:'Please give details' } ] } }
+      ]},
+      { num:'&#10003;', title:'Declaration', fields:[
+        { type:'callout', text:'I hereby warrant the truth of the above. I declare that I have withheld no information whatever which might tend in any way to increase the risk of the Company, or influence the acceptance of this Proposal. I agree that this proposal shall be the basis of the Contract between me and Trinidad and Tobago Insurance Limited, and I further agree to accept a Policy subject to its conditions.' },
+        { type:'text', id:'declSignature', label:'Signature of proposer (type full name to confirm)', width:'half' },
+        { type:'date', id:'declDate', label:'Date of proposal and declaration', width:'half' }
+      ]}
+    ]
+  };
+  renderFormSchema(fireProposalSchema, document.getElementById('fp-mount'));
+
+  // ==================== Motor Vehicle Accident Report Form (TATIL — real claims form) ====================
+  var motorClaimSchema = {
+    id: 'mc',
+    title: 'Motor Vehicle Accident Report Form',
+    readyFields: ['insuredName', 'policyNo', 'regNo', 'accidentDate', 'declarationConfirmed'],
+    captionField: 'insuredName',
+    protoNote: 'Built directly from TATIL\'s real "Motor Vehicle Accident Report Form" &mdash; using generic placeholder data, not a real claimant\'s answers. <em>Claims routing/labels below use the same generic status pipeline as the proposal forms for now &mdash; pinned for a follow-up update once claims-specific routing details are confirmed.</em>',
+    sections: [
+      { num:'1', title:'The Insured', fields:[
+        { type:'text', id:'insuredName', label:'Name', width:'half' },
+        { type:'text', id:'insuredEmail', label:'Email address', width:'half' },
+        { type:'text', id:'insuredAddress', label:'Postal address', width:'half' },
+        { type:'text', id:'insuredPhone', label:'Telephone', width:'half' },
+        { type:'text', id:'employer', label:'Employer', width:'half' },
+        { type:'text', id:'employerPhone', label:'Employer telephone', width:'half' },
+        { type:'text', id:'occupation', label:'Occupation', width:'half' },
+        { type:'yesno', id:'vatRegistered', label:'Are you VAT registered?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'vatNumber', label:'VAT registration number' } ] } }
+      ]},
+      { num:'2', title:'The Policy & Vehicle', fields:[
+        { type:'text', id:'policyNo', label:'Policy number', width:'third' },
+        { type:'date', id:'effDate', label:'Effective date', width:'third' },
+        { type:'date', id:'expiryDate', label:'Expiry date', width:'third' },
+        { type:'select', id:'coverageType', label:'Type of coverage', options:['Comprehensive','Fire & Theft','Third Party','Crash Cash','Courtesy Cash'], width:'half' },
+        { type:'text', id:'otherInsurer', label:'If not Tatil, with whom is it insured?', width:'half' },
+        { type:'text', id:'regNo', label:'Registration no.', width:'third' },
+        { type:'text', id:'makeModel', label:'Make and model of vehicle', width:'third' },
+        { type:'text', id:'yearMake', label:'Year', width:'third' },
+        { type:'text', id:'chassisEngineNo', label:'Chassis no. & engine no.', width:'half' },
+        { type:'text', id:'sumInsured', label:'Sum insured', width:'half' },
+        { type:'yesno', id:'vehicleInInsuredName', label:'Is the vehicle registered in your name?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'vehicleOwnerName', label:'If no, in whose name?' } ] } },
+        { type:'yesno', id:'vehicleFinanced', label:'Is the vehicle subject to any finance agreement?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'vehicleFinanceDetails', label:'Please give details' } ] } }
+      ]},
+      { num:'3', title:'The Driver', fields:[
+        { type:'text', id:'driverName', label:'Name', width:'half' },
+        { type:'select', id:'driverSex', label:'Sex', options:['Male','Female'], width:'half' },
+        { type:'text', id:'driverAddress', label:'Postal address', width:'half' },
+        { type:'text', id:'driverPhone', label:'Telephone', width:'half' },
+        { type:'text', id:'driverBusinessAddress', label:'Business address', width:'half' },
+        { type:'text', id:'driverBusinessPhone', label:'Business telephone', width:'half' },
+        { type:'text', id:'driverOccupation', label:'Occupation', width:'half' },
+        { type:'text', id:'driverEmployer', label:'Employer', width:'half' },
+        { type:'date', id:'driverDob', label:'Date of birth', width:'third' },
+        { type:'text', id:'driverAge', label:'Age', width:'third' },
+        { type:'text', id:'driverPermitNo', label:'Permit number', width:'third' },
+        { type:'text', id:'driverLicenceClass', label:'Class', width:'third' },
+        { type:'date', id:'driverLicenceIssued', label:'Date of issue', width:'third' },
+        { type:'date', id:'driverLicenceExpiry', label:'Date of expiry', width:'third' },
+        { type:'yesno', id:'driverPriorAccident', label:'Has driver been previously involved in an accident?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'driverPriorAccidentDetails', label:'Please give details' } ] } },
+        { type:'yesno', id:'driverPriorOffence', label:'Has driver ever been charged with a traffic offence?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'driverPriorOffenceDetails', label:'Please give details' } ] } },
+        { type:'text', id:'driverRelation', label:'Driver\'s relation to the insured (if employee, how long employed?)' },
+        { type:'yesno', id:'driverOwnsCar', label:'Does driver own a motor car?', defaultValue:'no',
+          detail:{ fields:[
+            { type:'text', id:'driverCarRegNo', label:'Registration number', width:'half' },
+            { type:'text', id:'driverCarInsurer', label:'Where is it insured? Policy/certificate no.', width:'half' }
+          ]} }
+      ]},
+      { num:'4', title:'The Accident / Theft', fields:[
+        { type:'date', id:'accidentDate', label:'Date', width:'half' },
+        { type:'text', id:'accidentTime', label:'Time (am/pm)', width:'half' },
+        { type:'text', id:'accidentPlace', label:'Place' },
+        { type:'text', id:'vehiclePurpose', label:'For what purpose was the vehicle being used? Please describe fully.' },
+        { type:'text', id:'directionInsured', label:'Direction of travel &mdash; insured\'s vehicle', width:'half' },
+        { type:'text', id:'directionThirdParty', label:'Direction of travel &mdash; third party\'s vehicle', width:'half' },
+        { type:'text', id:'accidentSpeed', label:'Speed at time of accident', width:'half' },
+        { type:'text', id:'roadCondition', label:'Condition of road', width:'half' },
+        { type:'yesno', id:'hornSounded', label:'Was horn sounded?', defaultValue:'no', width:'half' },
+        { type:'yesno', id:'visibilityGood', label:'Was visibility good?', defaultValue:'yes', width:'half' },
+        { type:'text', id:'policeStation', label:'Police station reported to', width:'half' },
+        { type:'text', id:'policeOfficer', label:'Name and number of police officer', width:'half' },
+        { type:'date', id:'reportedDate', label:'Date reported', width:'half' },
+        { type:'text', id:'reportedTime', label:'Time reported', width:'half' }
+      ]},
+      { num:'5', title:'The Third Party', fields:[
+        { type:'text', id:'tpRegNo', label:'Vehicle registration number', width:'half' },
+        { type:'text', id:'tpMakeModel', label:'Make & model of vehicle', width:'half' },
+        { type:'text', id:'tpColour', label:'Colour of vehicle', width:'half' },
+        { type:'text', id:'tpOwnerName', label:'Owner\'s name', width:'half' },
+        { type:'text', id:'tpOwnerAddress', label:'Owner\'s address', width:'half' },
+        { type:'text', id:'tpDriverName', label:'Driver\'s name', width:'half' },
+        { type:'text', id:'tpDriverAddress', label:'Driver\'s address', width:'half' },
+        { type:'text', id:'tpInsurer', label:'Insurance company', width:'half' },
+        { type:'text', id:'tpPolicyNo', label:'Policy & certificate number', width:'half' },
+        { type:'text', id:'tpDamageDescription', label:'Description of damages and your estimate of the cost of repairs' }
+      ]},
+      { num:'6', title:'Damages to Insured\'s Vehicle', fields:[
+        { type:'text', id:'damageDescription', label:'Description of damages' },
+        { type:'text', id:'repairerName', label:'Name of repairer', width:'half' },
+        { type:'text', id:'estimateCost', label:'Was estimate prepared? Cost', width:'half' },
+        { type:'text', id:'inspectionLocation', label:'Where can the vehicle be inspected?' }
+      ]},
+      { num:'7', title:'Passengers & Witnesses', fields:[
+        { type:'callout', text:'Passengers in your vehicle:' },
+        { type:'table', columns:['Name','Age','Address','Injury (if any)','Physician / Hospital'], rows:2 },
+        { type:'callout', text:'Passengers in other vehicle / pedestrians:' },
+        { type:'table', columns:['Name','Age','Address','Injury (if any)','Physician / Hospital'], rows:2 },
+        { type:'callout', text:'Independent witnesses:' },
+        { type:'table', columns:['Name','Address','Telephone'], rows:2 }
+      ]},
+      { num:'&#10003;', title:'Opinion & Declaration', fields:[
+        { type:'text', id:'accidentDetailsFull', label:'Give full details of the accident' },
+        { type:'text', id:'faultOpinion', label:'In your opinion, who was at fault?', width:'half' },
+        { type:'yesno', id:'faultAdmitted', label:'Did such person admit responsibility?', defaultValue:'no', width:'half' },
+        { type:'checkbox', id:'declarationConfirmed', label:'I/We declare that the above statements and facts are true and that I/We have not withheld any information within my/our knowledge connected with the claim.' },
+        { type:'text', id:'declSignatureInsured', label:'Signature of insured (type full name to confirm)', width:'half' },
+        { type:'text', id:'declSignatureDriver', label:'Signature of driver (type full name to confirm)', width:'half' },
+        { type:'date', id:'declDate', label:'Date', width:'half' },
+        { type:'callout', variant:'warn', text:'The Company does not admit any liability by the use of this form.' },
+        { type:'callout', text:'Normally submitted to motorclaims@tatil.co.tt or via tatil.co.tt.' }
+      ]}
+    ]
+  };
+  renderFormSchema(motorClaimSchema, document.getElementById('mc-mount'));
+
+  // ==================== Loss of or Damage to Property Claim Form (TATIL — real claims form) ====================
+  var propertyClaimSchema = {
+    id: 'pc',
+    title: 'Loss of or Damage to Property Claim Form',
+    readyFields: ['insuredName', 'policyNo', 'lossDate', 'declarationConfirmed'],
+    captionField: 'insuredName',
+    protoNote: 'Built directly from TATIL\'s real "Loss of or Damage to Property Claim Form" &mdash; using generic placeholder data, not a real claimant\'s answers. <em>Claims routing/labels below use the same generic status pipeline as the proposal forms for now &mdash; pinned for a follow-up update once claims-specific routing details are confirmed.</em>',
+    sections: [
+      { num:'1', title:'Policy & Insured', fields:[
+        { type:'text', id:'policyNo', label:'Policy number', width:'half' },
+        { type:'text', id:'policyType', label:'Type of policy', width:'half' },
+        { type:'text', id:'insuredName', label:'Name of insured', width:'half' },
+        { type:'text', id:'insuredEmail', label:'Email address', width:'half' },
+        { type:'text', id:'insuredAddress', label:'Postal address', width:'half' },
+        { type:'text', id:'insuredPhone', label:'Telephone', width:'half' },
+        { type:'text', id:'lossAddress', label:'Address where the loss occurred', width:'half' },
+        { type:'text', id:'lossAddressPhone', label:'Telephone at that address', width:'half' }
+      ]},
+      { num:'2', title:'Circumstances of Loss', fields:[
+        { type:'text', id:'premisesPurpose', label:'For what purposes were the premises being used?' },
+        { type:'yesno', id:'premisesOccupied', label:'Were the premises occupied at the time of loss?', defaultValue:'yes',
+          detail:{ flagOn:'no', fields:[ { type:'text', id:'lastOccupiedDetails', label:'If not, when and by whom were they last occupied?' } ] } },
+        { type:'text', id:'riskAlteration', label:'Describe fully any alteration in risk (physical or otherwise) which took place during the relevant period of insurance.' },
+        { type:'text', id:'natureOfOccurrence', label:'What was the nature of the occurrence? (e.g. fire, flood, theft)', width:'half' },
+        { type:'date', id:'lossDate', label:'Date it took place', width:'third' },
+        { type:'text', id:'lossTime', label:'Time it took place', width:'third' },
+        { type:'text', id:'lossDescription', label:'Describe briefly what happened and the resultant damage' },
+        { type:'text', id:'lossCause', label:'What do you believe caused or contributed to the loss?' },
+        { type:'yesno', id:'suspectPerson', label:'Do you have reason to suspect any particular person?', defaultValue:'no',
+          detail:{ fields:[ { type:'text', id:'suspectPersonDetails', label:'Name and address of that person' } ] } },
+        { type:'text', id:'policeFireStation', label:'Police or Fire station where the loss was reported', width:'half' },
+        { type:'date', id:'reportedDate', label:'Date reported', width:'third' },
+        { type:'text', id:'reportedOfficer', label:'Name & number of officer', width:'third' },
+        { type:'text', id:'otherInterestParty', label:'Name and address of any other party having an interest in the property (e.g. mortgage, hire purchase, joint-ownership)' },
+        { type:'text', id:'otherInsurance', label:'Full particulars of all other insurances on the property, whether effected by you or anyone else' },
+        { type:'text', id:'similarPastLosses', label:'Full particulars of any other losses of a similar nature sustained by you at these or any other premises' }
+      ]},
+      { num:'3', title:'Particulars of Property Damaged or Destroyed', fields:[
+        { type:'table', columns:['Qty','Description of Property','Date of Purchase','Original Cost Price','Value at Time of Loss','Cost of Repairs','Value of Salvage','Net Amount Claimed'], rows:4 }
+      ]},
+      { num:'&#10003;', title:'Declaration', fields:[
+        { type:'checkbox', id:'declarationConfirmed', label:'I/We declare that the property detailed and insured under the above policy was damaged or destroyed as stated and in consequence a claim is hereby made for the sum stated herein. I/We declare that the information provided on this form is true and accurate in every respect.' },
+        { type:'text', id:'declSignature', label:'Signature of insured (type full name to confirm)', width:'half' },
+        { type:'date', id:'declDate', label:'Date', width:'half' },
+        { type:'callout', text:'Normally submitted to nonmotorclaims@tatil.co.tt or via tatil.co.tt.' }
+      ]}
+    ]
+  };
+  renderFormSchema(propertyClaimSchema, document.getElementById('pc-mount'));
 
   // ==================== Amendment of Application (TATIL Life) ====================
   var AM_SUPP_ITEMS = [
