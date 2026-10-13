@@ -41,7 +41,7 @@ This step creates the four tabs the backend needs (`Submissions`, `Events`, `Age
 5. A popup should appear in the Sheet saying "Setup complete." If you don't see it, switch back to the Sheet tab and check — Apps Script sometimes shows the alert there.
 6. Go back to the Sheet tab and confirm you now have four tabs at the bottom: **Submissions**, **Events**, **Agents**, **Settings**.
 
-If you ever think the Sheet got out of sync (a tab deleted by accident, etc.), you can re-run `setup()` any time — it only adds what's missing and never deletes or duplicates existing data.
+If you ever think the Sheet got out of sync (a tab deleted by accident, etc.), you can re-run `setup()` any time — it only adds what's missing and never deletes or duplicates existing data. This also covers new columns: if you update `Code.gs` to a newer version of this project and it adds new fields (e.g. payment or renewal tracking), re-running `setup()` will add just those missing columns to the end of the `Submissions` tab without touching any existing rows.
 
 ---
 
@@ -110,6 +110,18 @@ All of this lives in the **Settings** tab — one row per setting, in the `value
 | `messageTemplates` | Custom wording for client WhatsApp/email updates (advanced, leave as `{}` for the built-in defaults) | `{}` |
 
 Just click the cell in the `value` column for the row you want to change, type the new value, and press Enter. Changes apply immediately — nobody needs to redeploy anything.
+
+---
+
+## 7a. Optional: automatic renewal reminders
+
+Back office can always create a renewal thread manually from a file's detail screen (see `TEAM-SOP.md`). If you'd rather this happened on its own every morning for files that are due:
+
+1. In the Apps Script editor, pick **installRenewalTrigger** from the function dropdown at the top.
+2. Click **Run** (▶). Authorize again if prompted (same safe/expected warning as step 3 above).
+3. You'll see a confirmation alert once it's installed. From then on, the script checks once a day (around 7am Trinidad time) for any issued policy that's due a renewal thread and creates it automatically — same result as clicking the manual button, just without anyone having to remember to.
+
+This is entirely optional — skip it if you'd rather renewals stayed a deliberate, manual action by back office.
 
 ---
 

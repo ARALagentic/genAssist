@@ -15,7 +15,7 @@ Our job is to acknowledge fast, chase missing items in one consolidated ask (nev
 Open **Queue**. It defaults to the **Open** filter — everything that needs action from you right now. That's every status except `Underwriting` (sitting with Tatil, nothing to do yet) and `Closed`/finished files; a file waiting on an Underwriting query or decision still shows up here, since that's on you to chase or record. Rows are sorted by whichever deadline is soonest — oldest/most urgent at the top.
 
 Each row shows:
-- **Status pill** — `Submitted` / `Acknowledged` / `GM Approval` / `Needs Info` / `Underwriting` / `UW Query` / `Approved` / `Declined` / `Documents Issued` / `Closed` (Claims uses `Query` / `Repudiated` / `Payment Issued` instead of the UW Query/Declined/Documents Issued wording — same lifecycle, different words)
+- **Status pill** — `Quoted` / `Submitted` / `Acknowledged` / `GM Approval` / `Needs Info` / `Underwriting` / `UW Query` / `Approved` / `Payment Pending` / `Payment Received` / `Documents Issued` / `Closed` (Claims uses `Query` / `Repudiated` / `Payment Issued` instead of the UW Query/Declined/Documents Issued wording, and skips the two payment statuses entirely — same lifecycle, different words, nothing to collect from the client on a claim)
 - **SLA dot** — green (on track), amber (75%+ of the SLA window used), red (breached)
 - **Owner** — who's handling it, or "Unassigned"
 - A **stale** badge if there's been no update in 3+ business days
@@ -27,6 +27,8 @@ Use the filters to focus:
 - **All** — includes files currently with Underwriting and closed files, for reference
 
 **Any red dot gets dealt with before anything else, regardless of filter.**
+
+**A `Quoted` row is a Quick Quote, not yet a full submission** — an agent is racing to get a price back to a client before they go elsewhere. It shows up in Open like everything else. There's nothing to acknowledge or send to Underwriting on it yet (it has no documents), but treat it with the same urgency as anything else on the clock — a slow quote loses the business before a file is ever opened.
 
 ---
 
@@ -66,10 +68,29 @@ Once a file is `Underwriting`, it drops out of the default **Open** filter (swit
 
 - **Log a query from Underwriting** — if Tatil comes back asking for something before they'll decide, write it as one consolidated note (same rule as Request missing info). The file moves to `UW Query` (Claims shows `Query`), and the agent sees it highlighted on their file. Once you've got what's needed, use **Resolved — resubmit to Underwriting** to put it back to `Underwriting` on the same thread.
 - **Record: Approved** / **Record: Declined** — once Tatil gives a decision, record it here with an optional note (policy reference, terms, reason for decline, etc.). This moves the file to `Approved` or `Declined` — for Claims, a decline is recorded as `Repudiated` instead, since that's the correct term for a claim. A client-update message opens automatically either way, and the agent sees the decision and your note on the file.
-- **Mark Documents Issued** (Claims: **Mark Payment Issued**) — once the policy documents or claim payment have actually gone out, mark it here so the file reflects reality.
+- **Mark Documents Issued** (Claims: **Mark Payment Issued**) — once the policy documents or claim payment have actually gone out, mark it here so the file reflects reality. On insurance products this button only appears after payment has been recorded (see below) — there's nothing to collect from a claimant, so Claims go straight from Approved to this button.
 - **Close file** — once there's nothing left to do (after Declined/Repudiated, or after Documents/Payment Issued), close it out.
 
 The agent never needs to be told any of this outside the system — it shows up on their file automatically as soon as you save it.
+
+---
+
+## 4a. Collecting payment (insurance products only — not Claims)
+
+Once an insurance file is `Approved`, it needs a payment step before documents can be issued — there's nothing to collect on a Claim, so claims skip straight from Approved to Mark Payment Issued.
+
+- **Request payment** — tap this once you know the terms. Record the **plan** (full annual payment, or 2-part if it's fully comprehensive), the **mode** (cash at ARAL, online payment to ARAL, or cheque — ARAL's preference is cash/online over paying Tatil directly), and the **amount due**. The file moves to `Payment Pending` and a client-update message opens automatically so the agent/client knows how and how much to pay.
+- **Payment received** — once the money's actually in, tap this and record the **amount received** and when. The file moves to `Payment Received`, which is what unlocks the **Mark Documents Issued** button.
+
+---
+
+## 4b. Renewals — spinning up a linked thread (insurance products only — not Claims)
+
+Once a file is `Documents Issued` (or already `Closed`), a **Create renewal reminder** button is available on it. Use it when it's time to start the renewal conversation — typically about a month before the policy's renewal date, after you've liaised with Tatil on claims history, rate changes, or vehicle-value changes that might affect the requote.
+
+Tapping it creates a **new, separate submission thread** at the `Quoted` stage, carrying over the client and product details, with **"Linked to [original reference]"** shown on it so anyone opening either file can trace the relationship. Treat it exactly like any other Quick Quote from there — same urgency, same flow into a full submission once the client confirms they're renewing.
+
+(If `installRenewalTrigger()` has been run in the backend — see `SETUP.md` — this same thing happens automatically every morning for any file that's due, so you may find some renewal threads already waiting in the queue without anyone having clicked the button.)
 
 ---
 

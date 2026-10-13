@@ -19,7 +19,21 @@ Forgot your PIN? Ask admin — they can see/reset it in two clicks.
 
 ---
 
-## 2. Submitting a new file — 4 steps, under 3 minutes on your phone
+## 2. Quick Quote — when the client just wants a price, fast
+
+This is what opens first when you sign in, because this is usually where things actually start: a client asking "how much would it cost me" before they've committed to anything. You're often racing another broker on this, so Quick Quote is deliberately tiny — no documents, no forms, just enough to get a number back to the client.
+
+1. Tap **Quick Quote**.
+2. Pick the product, enter the client's name and phone, and a note if you need one (e.g. vehicle value, sum insured, whatever you're pricing against).
+3. Submit. It shows up in your Quick Quote list with a reference number, and back office can see it too — a quote is still tracked, it's just lighter than a full submission.
+
+**Claims don't go through Quick Quote** — there's nothing to quote on a claim, so that product won't appear in the picker here.
+
+**When the client says yes:** open the quote in your list and tap **"Client is going ahead →."** This carries everything you already entered straight into the full submission wizard, on the **same reference number** — you're not starting a new file, you're continuing the one you've already got. From there you land on step 3 below (open the real form, attach documents) and finish with step 4 (review, submit). The 11:00 AM clock (see above) only starts counting from this point, once the file is actually complete — not from when you first sent the quote.
+
+---
+
+## 3. Submitting a new file — 4 steps, under 3 minutes on your phone
 
 Tap **New Submission**.
 
@@ -49,13 +63,17 @@ Tap **New Submission**.
 
 ---
 
-## 3. Tracking your files — "My Files"
+## 4. Tracking your files — "My Files"
 
 Every file you've submitted shows up here with a status badge. The intake route is the same for every product:
 
 `Submitted` → `Acknowledged` → (`GM Approval` if that step is switched on) → `Underwriting`
 
 Tap into any file to see the full timeline — every status change and note, with who did it and when.
+
+**After an Approved decision, insurance products (not Claims) also pick up a payment step:** `Approved` → `Payment Pending` → `Payment Received` → `Documents Issued`. Back office will tell you how the client should pay (cash/online at ARAL, or the 2-part option if it's fully comprehensive) once they request payment — you'll see it on the file either way, no separate message needed.
+
+**Once a policy is issued, don't forget the renewal.** About a month before the renewal date, back office spins up a renewal thread linked to the original file (you'll see "Linked to [original reference]" on it) so Tatil can be consulted on claims history, rate changes, and vehicle value before requoting. Treat a renewal thread exactly like a Quick Quote — the same urgency applies once the client confirms they're renewing.
 
 **If a file shows "Needs Info"**: open it, read exactly what back office needs (it's consolidated into one list, not a drip of separate messages), get it from the client, then tap **"I have sent the missing info — notify back office."** That moves it back into the queue and resets the response clock.
 
@@ -67,7 +85,7 @@ Files with no update in 3+ business days get a small warning badge — that's yo
 
 ---
 
-## 4. A few things worth knowing
+## 5. A few things worth knowing
 
 - Nothing in the Submission Desk is sent to Tatil automatically — back office reviews and sends the pack themselves. You're always submitting *to the back office*, not directly to underwriting.
 - Your client's phone number is used to build one-tap WhatsApp update links for back office — double-check you've typed it correctly.
