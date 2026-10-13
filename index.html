@@ -376,6 +376,24 @@
   .sd-settings-row{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);}
   .sd-settings-row label{font-size:12.5px;font-weight:600;}
   .sd-settings-row input, .sd-settings-row select, .sd-settings-row textarea{padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper-sunk);color:var(--ink);font-size:13px;width:100%;}
+
+  .sd-snap-tree{display:flex;flex-direction:column;gap:10px;}
+  .sd-snap-group{background:var(--paper);border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .sd-snap-group summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;}
+  .sd-snap-group summary::-webkit-details-marker{display:none;}
+  .sd-snap-group summary::after{content:'+';font-weight:400;color:var(--ink-faint);margin-left:8px;}
+  .sd-snap-group[open] summary::after{content:'\2212';}
+  .sd-snap-group .sd-snap-count{font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
+  .sd-snap-body{padding:0 14px 12px;}
+  .sd-snap-branch > summary{font-size:14.5px;background:var(--paper-sunk);}
+  .sd-snap-branch .sd-snap-body{padding:10px 10px 10px 16px;display:flex;flex-direction:column;gap:8px;}
+  .sd-snap-agent{border-color:var(--line);}
+  .sd-snap-agent > summary{font-size:13px;}
+  .sd-snap-agent .sd-snap-body{padding:8px 8px 8px 16px;display:flex;flex-direction:column;gap:6px;}
+  .sd-snap-client{border:1px dashed var(--line);background:var(--paper-sunk);}
+  .sd-snap-client > summary{font-size:12.5px;font-weight:600;padding:8px 10px;}
+  .sd-snap-client .sd-snap-body{padding:4px 10px 8px;}
+  .sd-snap-empty{text-align:center;padding:24px;color:var(--ink-faint);font-size:13px;}
 </style>
 
 <div class="app">
@@ -440,6 +458,16 @@
         <div class="sd-card">
           <h2>Admin Dashboard</h2>
           <div class="sd-metrics" id="sdAdminMetrics"></div>
+        </div>
+        <div class="sd-card">
+          <h3>Business Snapshot</h3>
+          <p style="font-size:12px;color:var(--ink-faint);margin:-4px 0 10px;">Business put through, organised by branch &rarr; agent &rarr; client &rarr; policies.</p>
+          <div id="sdSnapshotFilters" style="margin-bottom:10px;"></div>
+          <div class="sd-metrics" id="sdSnapshotSummary" style="margin-bottom:14px;"></div>
+          <div class="sd-snap-tree" id="sdSnapshotTree"></div>
+          <div style="margin-top:12px;">
+            <button class="btn-ghost" id="sdExportSnapshotBtn">&darr; Export this snapshot as CSV</button>
+          </div>
         </div>
         <div class="sd-card">
           <h3>Log an off-system submission</h3>
@@ -2638,8 +2666,8 @@
   // (localStorage, no backend needed) · 'appsscript' talks to a
   // deployed Google Apps Script Web App (see SETUP.md). ----
   var SD_CONFIG = {
-    backend: 'local', // 'local' | 'appsscript'
-    APPS_SCRIPT_URL: '' // paste your /exec Web App URL here once deployed
+    backend: 'appsscript', // 'local' | 'appsscript'
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxDpUOlUlCQuJeLXPHcUBWhPHT0U1A-HBCpZ0qfUZ16K9w8jpvAX1SvAbsJOifGuA8NIA/exec'
   };
 
   // ---- PRODUCT_RULES: one entry per submission type offered in the
@@ -4235,12 +4263,155 @@
         { n: offSystem.length, label: 'Off-system logged' }
       ].map(function(m){ return '<div class="sd-metric"><strong>' + m.n + '</strong><span>' + m.label + '</span></div>'; }).join('');
       sdRenderOffSystemCard();
+      sdRenderSnapshot();
     });
   }
   function sdRenderOffSystemCard(){
     document.getElementById('sdOffSystemForm').innerHTML = '<button class="btn-primary" id="sdAdminLogOff">+ Log an off-system submission</button>';
     document.getElementById('sdAdminLogOff').addEventListener('click', sdOpenOffSystemModal);
   }
+
+  // ================================================================
+  // Admin — Business Snapshot (business put through, by branch/agent/client)
+  // ================================================================
+  var sdSnapshotPeriod = 'week';
+  function sdSnapshotPeriodStart(period, now){
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (period === 'week') {
+      // Calendar week starting Monday.
+      var day = start.getDay(); // 0=Sun..6=Sat
+      var diff = (day === 0 ? 6 : day - 1);
+      start.setDate(start.getDate() - diff);
+    } else if (period === 'month') {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (period === 'year') {
+      start = new Date(now.getFullYear(), 0, 1);
+    }
+    return start;
+  }
+  function sdSnapshotPeriodLabel(period){
+    return period === 'week' ? 'This week' : (period === 'month' ? 'This month' : 'This year');
+  }
+  function sdRenderSnapshotFilters(){
+    var periods = [
+      { id: 'week', label: 'Week' },
+      { id: 'month', label: 'Month' },
+      { id: 'year', label: 'Year' }
+    ];
+    document.getElementById('sdSnapshotFilters').innerHTML = periods.map(function(p){
+      return '<button type="button" class="sd-navbtn' + (sdSnapshotPeriod === p.id ? ' active' : '') + '" data-period="' + p.id + '" style="padding:7px 12px;font-size:12px;">' + p.label + '</button>';
+    }).join('');
+    document.querySelectorAll('#sdSnapshotFilters [data-period]').forEach(function(b){
+      b.addEventListener('click', function(){ sdSnapshotPeriod = b.getAttribute('data-period'); sdRenderSnapshot(); });
+    });
+  }
+  // Groups the given submissions into branch -> agent -> client -> [submissions].
+  // Returns an array of branch groups, each sorted alphabetically, so the
+  // tree render and the CSV export can share one aggregation pass.
+  function sdBuildSnapshot(period){
+    var now = nowInTrinidad();
+    var start = sdSnapshotPeriodStart(period, now);
+    var rows = (sdAllSubsCache || []).filter(function(s){
+      var d = new Date(s.submittedAt || s.createdAt);
+      return d >= start && d <= now;
+    });
+    var branchMap = {};
+    rows.forEach(function(s){
+      var branchName = s.branch || 'Unassigned branch';
+      var agentKey = (s.agentCode || s.agentName || 'unknown');
+      var agentName = s.agentName || s.agentCode || 'Unknown agent';
+      var clientKey = (s.clientName || 'Unknown client') + '|' + (s.clientPhone || s.clientEmail || '');
+      if (!branchMap[branchName]) branchMap[branchName] = { name: branchName, agents: {} };
+      var branch = branchMap[branchName];
+      if (!branch.agents[agentKey]) branch.agents[agentKey] = { name: agentName, code: s.agentCode || '', clients: {} };
+      var agent = branch.agents[agentKey];
+      if (!agent.clients[clientKey]) agent.clients[clientKey] = { name: s.clientName || 'Unknown client', phone: s.clientPhone || '', email: s.clientEmail || '', subs: [] };
+      agent.clients[clientKey].subs.push(s);
+    });
+    var branches = Object.keys(branchMap).sort().map(function(bName){
+      var b = branchMap[bName];
+      var agents = Object.keys(b.agents).sort(function(a, c){ return b.agents[a].name.localeCompare(b.agents[c].name); }).map(function(aKey){
+        var a = b.agents[aKey];
+        var clients = Object.keys(a.clients).sort(function(x, y){ return a.clients[x].name.localeCompare(a.clients[y].name); }).map(function(cKey){ return a.clients[cKey]; });
+        return { name: a.name, code: a.code, clients: clients };
+      });
+      return { name: b.name, agents: agents };
+    });
+    return { start: start, end: now, branches: branches, rows: rows };
+  }
+  function sdSnapshotCounts(branches){
+    var agentCount = 0, clientCount = 0, policyCount = 0;
+    branches.forEach(function(b){
+      agentCount += b.agents.length;
+      b.agents.forEach(function(a){
+        clientCount += a.clients.length;
+        a.clients.forEach(function(c){ policyCount += c.subs.length; });
+      });
+    });
+    return { branchCount: branches.length, agentCount: agentCount, clientCount: clientCount, policyCount: policyCount };
+  }
+  function sdRenderSnapshot(){
+    sdRenderSnapshotFilters();
+    var snap = sdBuildSnapshot(sdSnapshotPeriod);
+    var counts = sdSnapshotCounts(snap.branches);
+    document.getElementById('sdSnapshotSummary').innerHTML = [
+      { n: sdSnapshotPeriodLabel(sdSnapshotPeriod) + ' &middot; from ' + ymd(snap.start), label: 'Period' },
+      { n: counts.policyCount, label: 'Submissions' },
+      { n: counts.clientCount, label: 'Clients' },
+      { n: counts.agentCount, label: 'Agents' },
+      { n: counts.branchCount, label: 'Branches' }
+    ].map(function(m){ return '<div class="sd-metric"><strong>' + m.n + '</strong><span>' + m.label + '</span></div>'; }).join('');
+    var tree = document.getElementById('sdSnapshotTree');
+    if (!snap.branches.length) { tree.innerHTML = '<div class="sd-snap-empty">No business put through in this period yet.</div>'; return; }
+    tree.innerHTML = snap.branches.map(function(b){
+      var branchPolicyCount = 0;
+      var agentsHtml = b.agents.map(function(a){
+        var agentPolicyCount = 0;
+        var clientsHtml = a.clients.map(function(c){
+          agentPolicyCount += c.subs.length;
+          var subsHtml = c.subs.map(function(s){
+            return '<div class="sd-row" data-id="' + sdEsc(s.id) + '">' +
+              '<div class="sd-row-main"><strong>' + sdEsc((getProductRules(sdSettingsCache)[s.product] || {}).label || s.product) + '</strong>' +
+              '<span class="mono">' + sdEsc(s.id) + ' &middot; ' + sdEsc(ymd(new Date(s.submittedAt || s.createdAt))) + (s.offSystem ? ' &middot; off-system' : '') + '</span></div>' +
+              '<div class="sd-row-meta"><span class="sd-status-pill ' + sdStatusPillClass(s.status, s.product) + '">' + sdEsc(s.status) + '</span></div>' +
+              '</div>';
+          }).join('');
+          return '<details class="sd-snap-group sd-snap-client"><summary>' + sdEsc(c.name) + (c.phone ? ' <span class="mono" style="font-weight:400;">' + sdEsc(c.phone) + '</span>' : '') + '<span class="sd-snap-count">' + c.subs.length + ' polic' + (c.subs.length === 1 ? 'y' : 'ies') + '</span></summary>' +
+            '<div class="sd-snap-body">' + subsHtml + '</div></details>';
+        }).join('');
+        branchPolicyCount += agentPolicyCount;
+        return '<details class="sd-snap-group sd-snap-agent"><summary>' + sdEsc(a.name) + (a.code ? ' <span class="mono" style="font-weight:400;">(' + sdEsc(a.code) + ')</span>' : '') + '<span class="sd-snap-count">' + a.clients.length + ' client' + (a.clients.length === 1 ? '' : 's') + ' &middot; ' + agentPolicyCount + ' polic' + (agentPolicyCount === 1 ? 'y' : 'ies') + '</span></summary>' +
+          '<div class="sd-snap-body">' + clientsHtml + '</div></details>';
+      }).join('');
+      return '<details class="sd-snap-group sd-snap-branch" open><summary>' + sdEsc(b.name) + '<span class="sd-snap-count">' + b.agents.length + ' agent' + (b.agents.length === 1 ? '' : 's') + ' &middot; ' + branchPolicyCount + ' polic' + (branchPolicyCount === 1 ? 'y' : 'ies') + '</span></summary>' +
+        '<div class="sd-snap-body">' + agentsHtml + '</div></details>';
+    }).join('');
+  }
+  document.getElementById('sdExportSnapshotBtn').addEventListener('click', function(){
+    var snap = sdBuildSnapshot(sdSnapshotPeriod);
+    var cols = ['branch', 'agentCode', 'agentName', 'clientName', 'clientPhone', 'clientEmail', 'id', 'product', 'status', 'submittedAt', 'createdAt', 'offSystem'];
+    var lines = [cols.join(',')];
+    snap.branches.forEach(function(b){
+      b.agents.forEach(function(a){
+        a.clients.forEach(function(c){
+          c.subs.forEach(function(s){
+            var rec = { branch: b.name, agentCode: a.code, agentName: a.name, clientName: c.name, clientPhone: c.phone, clientEmail: c.email, id: s.id, product: s.product, status: s.status, submittedAt: s.submittedAt, createdAt: s.createdAt, offSystem: s.offSystem };
+            lines.push(cols.map(function(col){
+              var v = rec[col] == null ? '' : String(rec[col]);
+              if (v.indexOf(',') > -1 || v.indexOf('"') > -1) v = '"' + v.replace(/"/g, '""') + '"';
+              return v;
+            }).join(','));
+          });
+        });
+      });
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'aral-snapshot-' + sdSnapshotPeriod + '-' + ymd(nowInTrinidad()) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
+
   document.getElementById('sdExportCsvBtn').addEventListener('click', function(){
     dataLayer.listSubmissions({}).then(function(subs){
       var cols = ['id', 'product', 'subtype', 'status', 'agentCode', 'agentName', 'branch', 'clientName', 'clientPhone', 'clientEmail', 'owner', 'nextAction', 'nextActionDue', 'createdAt', 'submittedAt', 'cutoffApplied', 'offSystem'];

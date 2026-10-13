@@ -52,8 +52,27 @@ function setup() {
   ensureSheet_(ss, 'Events', ['id', 'submissionId', 'type', 'actor', 'text', 'createdAt']);
 
   var agentsSheet = ensureSheet_(ss, 'Agents', ['code', 'pin', 'name', 'branch', 'role', 'active']);
+  // Force the code/pin columns to plain-text format so values like "0000"
+  // or "0025" keep their leading zeros instead of being silently
+  // auto-detected as numbers by Sheets (which is exactly what happened to
+  // the starter ADMIN1 row below before this fix — Sheets quietly turned
+  // "0000" into the number 0, breaking login). This also protects any
+  // agent rows added later by typing directly into the Sheet.
+  agentsSheet.getRange('A:B').setNumberFormat('@');
   if (agentsSheet.getLastRow() < 2) {
     agentsSheet.appendRow(['ADMIN1', '0000', 'System Admin', 'Head Office', 'admin', true]);
+  } else {
+    // Self-heal: if setup() already ran once before this fix existed, the
+    // starter row's pin may already be corrupted down to the number 0.
+    // Now that the column is correctly formatted as text, repair that
+    // specific known case so existing live Sheets fix themselves on the
+    // next setup() run instead of needing a manual edit.
+    var agentRows = agentsSheet.getDataRange().getValues();
+    for (var ar = 1; ar < agentRows.length; ar++) {
+      if (String(agentRows[ar][0]) === 'ADMIN1' && String(agentRows[ar][1]) === '0') {
+        agentsSheet.getRange(ar + 1, 2).setValue('0000');
+      }
+    }
   }
 
   var settingsSheet = ensureSheet_(ss, 'Settings', ['key', 'value']);
@@ -443,9 +462,23 @@ function handleSettingsGet_() {
   var rows = sheetToObjects_(getSheet_('Settings'));
   var out = {};
   rows.forEach(function (r) {
-    out[r.key] = maybeParseJson_(r.value);
+    out[r.key] = normalizeSettingValue_(r.value);
   });
   return out;
+}
+
+// Google Sheets auto-detects a cell typed like "11:00" or "08:00" as a
+// time-of-day value rather than plain text, so getValues() hands it back
+// as a JS Date (epoch date 1899-12-30 + that time) instead of the string
+// the rest of the app expects. Convert any Date value back to a plain
+// "HH:mm" string before it reaches maybeParseJson_ / the frontend — this
+// covers cutoffTime, businessHoursStart, businessHoursEnd today and any
+// future time-shaped setting without needing to special-case key names.
+function normalizeSettingValue_(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, 'America/Port_of_Spain', 'HH:mm');
+  }
+  return maybeParseJson_(value);
 }
 
 // ---- settings.update { patch } ----
