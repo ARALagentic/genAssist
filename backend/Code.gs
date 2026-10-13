@@ -35,7 +35,18 @@ function setup() {
     'id', 'product', 'subtype', 'status', 'agentCode', 'agentName', 'branch',
     'clientName', 'clientPhone', 'clientEmail', 'formData', 'documents',
     'owner', 'nextAction', 'nextActionDue', 'createdAt', 'updatedAt',
-    'submittedAt', 'cutoffApplied', 'slaAcknowledgeDue', 'slaState', 'offSystem'
+    'submittedAt', 'cutoffApplied', 'slaAcknowledgeDue', 'slaState', 'offSystem',
+    // Stage-0 quick quote -> Stage-5 renewal linkage: parentRef points this
+    // row back at the submission it was spun off from (a quote that became
+    // a real submission stays on the SAME id, so parentRef is only used for
+    // renewal threads, which are deliberately separate linked rows).
+    'parentRef', 'quoteNotes',
+    // Stage-3 payment (collected between Approved and Documents Issued for
+    // insurance products — claims skip this, see sdSupportsQuoteAndPayment
+    // in index.html).
+    'paymentPlan', 'paymentMode', 'paymentAmountDue', 'paymentAmountReceived', 'paymentReceivedAt',
+    // issuedAt anchors the renewal reminder a month ahead of this date.
+    'issuedAt'
   ]);
 
   ensureSheet_(ss, 'Events', ['id', 'submissionId', 'type', 'actor', 'text', 'createdAt']);
@@ -61,6 +72,15 @@ function setup() {
     defaults.forEach(function (row) { settingsSheet.appendRow(row); });
   }
 
+  addMissingColumns_(getSheet_('Submissions'), [
+    'id', 'product', 'subtype', 'status', 'agentCode', 'agentName', 'branch',
+    'clientName', 'clientPhone', 'clientEmail', 'formData', 'documents',
+    'owner', 'nextAction', 'nextActionDue', 'createdAt', 'updatedAt',
+    'submittedAt', 'cutoffApplied', 'slaAcknowledgeDue', 'slaState', 'offSystem',
+    'parentRef', 'quoteNotes', 'paymentPlan', 'paymentMode', 'paymentAmountDue',
+    'paymentAmountReceived', 'paymentReceivedAt', 'issuedAt'
+  ]);
+
   SpreadsheetApp.getUi().alert('Setup complete. Tabs ready: Submissions, Events, Agents, Settings.');
 }
 
@@ -76,6 +96,21 @@ function ensureSheet_(ss, name, headers) {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+// Appends any header columns from `wanted` that a sheet doesn't already
+// have, without touching existing columns or rows. This is what makes
+// re-running setup() after an update (e.g. adding the payment/renewal
+// fields below) actually pick up new columns on a Sheet that's already
+// live with real data — ensureSheet_ alone only writes headers once, the
+// very first time a tab is created.
+function addMissingColumns_(sheet, wanted) {
+  var lastCol = sheet.getLastColumn();
+  var existing = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  var missing = wanted.filter(function (h) { return existing.indexOf(h) === -1; });
+  if (missing.length) {
+    sheet.getRange(1, existing.length + 1, 1, missing.length).setValues([missing]);
+  }
 }
 
 // ====================================================================
@@ -294,6 +329,78 @@ function nextSubmissionId_(sheet) {
   var seq = String(maxSeq + 1);
   while (seq.length < 4) seq = '0' + seq;
   return prefix + seq;
+}
+
+// ====================================================================
+// RENEWAL REMINDERS (Stage 5) — OPTIONAL automation.
+// ----------------------------------------------------------------
+// The Submission Desk already lets back office click "Create renewal
+// reminder" by hand on any issued file (index.html, sdCreateRenewalThread).
+// This function does the exact same thing automatically, a month ahead of
+// the date the policy was actually put through (issuedAt), so nobody has
+// to remember. It's entirely optional — skip installRenewalTrigger() below
+// if you'd rather keep doing it by hand for now.
+//
+// It is safe to run repeatedly: it never creates a second renewal thread
+// for the same policy (it checks for an existing row with a matching
+// parentRef first).
+// ====================================================================
+function checkRenewals_() {
+  var sheet = getSheet_('Submissions');
+  var rows = sheetToObjects_(sheet);
+  var existingParentRefs = {};
+  rows.forEach(function (r) { if (r.parentRef) existingParentRefs[r.parentRef] = true; });
+
+  var now = new Date();
+  rows.forEach(function (r) {
+    if (r.status !== 'Documents Issued') return; // claims don't renew this way
+    if (!r.issuedAt) return;
+    if (existingParentRefs[r.id]) return; // already has a renewal thread
+
+    var issued = new Date(r.issuedAt);
+    var reminderDate = new Date(issued);
+    reminderDate.setMonth(reminderDate.getMonth() + 11); // ~1 month before the 1-year renewal date
+    if (now < reminderDate) return;
+
+    var newRecord = {
+      product: r.product,
+      subtype: r.subtype,
+      agentCode: r.agentCode,
+      agentName: r.agentName,
+      branch: r.branch,
+      clientName: r.clientName,
+      clientPhone: r.clientPhone,
+      clientEmail: r.clientEmail,
+      formData: r.formData,
+      documents: JSON.stringify([]),
+      status: 'Quoted',
+      nextAction: 'Liaise with Tatil — confirm claims history, rate change, vehicle value before requoting',
+      nextActionDue: '',
+      parentRef: r.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      submittedAt: new Date().toISOString()
+    };
+    var created = appendObjectRow_(sheet, Object.assign({ id: nextSubmissionId_(sheet) }, newRecord));
+    existingParentRefs[r.id] = true; // guard against duplicates within this same run
+
+    var eventsSheet = getSheet_('Events');
+    var ts = new Date().toISOString();
+    appendObjectRow_(eventsSheet, { id: 'EV-' + Date.now() + '-1', submissionId: r.id, type: 'status_change', actor: 'System (renewal reminder)', text: 'Renewal reminder started automatically — new thread ' + created.id + '.', createdAt: ts });
+    appendObjectRow_(eventsSheet, { id: 'EV-' + Date.now() + '-2', submissionId: created.id, type: 'status_change', actor: 'System (renewal reminder)', text: 'Renewal of ' + r.id + ' — liaising with Tatil on claims history, rate change, and vehicle value before requoting.', createdAt: ts });
+  });
+}
+
+// Run this ONCE from the Apps Script editor (dropdown → installRenewalTrigger
+// → Run) if you want renewal threads created automatically every morning.
+// Safe to run more than once — it removes any previous checkRenewals_
+// trigger first so you never end up with duplicates firing the same day.
+function installRenewalTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'checkRenewals_') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('checkRenewals_').timeBased().everyDays(1).atHour(7).create();
+  SpreadsheetApp.getUi().alert('Renewal reminders will now be checked automatically every morning around 7am.');
 }
 
 // ---- events.add { submissionId, event:{type,actor,text} } ----

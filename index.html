@@ -400,6 +400,19 @@
         <div class="sd-who" id="sdWho"></div>
       </div>
 
+      <div class="sd-view" id="sdView-quickquote">
+        <div class="sd-card">
+          <h2>Quick Quote</h2>
+          <p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 12px;">For the price-shopping moment, before documents are ready — a bare-bones ask so admin can get a number back fast. If the client goes ahead, this becomes the real submission on the same reference, with this info already filled in.</p>
+          <div id="sdQuickQuoteForm"></div>
+        </div>
+        <div class="sd-card" id="sdQuickQuoteListCard">
+          <h3>Your open quotes</h3>
+          <p style="font-size:12px;color:var(--ink-faint);margin:-4px 0 10px;">Quoted but not yet converted into a full submission.</p>
+          <div id="sdQuickQuoteList" class="sd-list"></div>
+        </div>
+      </div>
+
       <div class="sd-view" id="sdView-newsub">
         <div class="sd-card"><div id="sdWizardSteps"></div></div>
         <div id="sdWizardBody"></div>
@@ -3183,8 +3196,10 @@
   // families — only the post-"sent to underwriting" outcome stages differ. ----
   var SD_STAGE_LABELS = {
     default: {
+      quoted: 'Quoted',
       submitted: 'Submitted', ack: 'Acknowledged', gm: 'GM Approval', needsInfo: 'Needs Info',
       sent: 'Underwriting', query: 'UW Query', approved: 'Approved', declined: 'Declined',
+      paymentPending: 'Payment Pending', paymentReceived: 'Payment Received',
       issued: 'Documents Issued', closed: 'Closed'
     },
     claims: {
@@ -3195,7 +3210,13 @@
   };
   // stages at or after "sent to underwriting" — once a file reaches one of
   // these the 4-step intake stepper below should read as fully complete.
-  var SD_POST_SENT_KEYS = ['query', 'approved', 'declined', 'issued', 'closed'];
+  var SD_POST_SENT_KEYS = ['query', 'approved', 'declined', 'paymentPending', 'paymentReceived', 'issued', 'closed'];
+  // products whose family supports the pre-submission quick-quote lane and
+  // the premium-payment stage. Claims go straight from a decision to a
+  // payout, with no quote race or premium-payment step, so they're excluded.
+  function sdSupportsQuoteAndPayment(product){
+    return sdStatusFamily(product) === 'default';
+  }
   function sdStatusFamily(product){
     var rules = getProductRules(sdSettingsCache);
     return (rules[product] && rules[product].statusFamily) || 'default';
@@ -3230,7 +3251,7 @@
   function sdStatusPillClass(status, product){
     var key = sdStageKey(product, status);
     if (key === 'needsInfo' || key === 'query' || key === 'declined') return 'flag';
-    if (key === 'sent' || key === 'approved' || key === 'issued') return 'ok';
+    if (key === 'sent' || key === 'approved' || key === 'paymentReceived' || key === 'issued') return 'ok';
     if (key === 'closed') return '';
     if (status === 'Needs Info') return 'flag';
     if (status === 'Underwriting') return 'ok';
@@ -3244,7 +3265,9 @@
     sentToUnderwriting: "Hi {clientName}, good news — your {product} submission (ref {refId}) has been sent to underwriting for review. We'll let you know as soon as we hear back.",
     nudge: "Hi {clientName}, just checking in on your {product} submission (ref {refId}) — we're still working on it and wanted to keep you posted.",
     approved: "Hi {clientName}, great news — underwriting has approved your {product} submission (ref {refId}). We'll be in touch shortly with next steps.",
-    declined: "Hi {clientName}, we have an update on your {product} submission (ref {refId}) — underwriting was unable to approve this one. We'll be in touch directly to go through the details and any options."
+    declined: "Hi {clientName}, we have an update on your {product} submission (ref {refId}) — underwriting was unable to approve this one. We'll be in touch directly to go through the details and any options.",
+    paymentDue: "Hi {clientName}, your {product} submission (ref {refId}) has been approved — we just need payment to put the policy through. {paymentText}",
+    documentsReady: "Hi {clientName}, your {product} policy documents (ref {refId}) are ready. Come by or let us know how you'd like them sent over."
   };
   function sdGetTemplate(key){
     var custom = (sdSettingsCache.messageTemplates || {})[key];
@@ -3320,7 +3343,7 @@
   }
 
   var SD_NAV_BY_ROLE = {
-    agent: [ { id: 'newsub', label: 'New Submission' }, { id: 'myfiles', label: 'My Files' } ],
+    agent: [ { id: 'quickquote', label: 'Quick Quote' }, { id: 'newsub', label: 'New Submission' }, { id: 'myfiles', label: 'My Files' } ],
     backoffice: [ { id: 'queue', label: 'Queue' } ],
     admin: [ { id: 'queue', label: 'Queue' }, { id: 'admin', label: 'Admin Dashboard' }, { id: 'settings', label: 'Settings' } ]
   };
@@ -3340,7 +3363,8 @@
     var el = document.getElementById('sdView-' + viewId);
     if (el) el.classList.add('active');
     sdRenderNav();
-    if (viewId === 'newsub') sdWizardInit();
+    if (viewId === 'quickquote') sdRenderQuickQuote();
+    else if (viewId === 'newsub') sdWizardInit();
     else if (viewId === 'myfiles') sdRenderMyFiles();
     else if (viewId === 'queue') sdRenderQueue();
     else if (viewId === 'admin') sdRenderAdmin();
@@ -3359,11 +3383,111 @@
   }
 
   // ================================================================
+  // Agent — Quick Quote (Stage 0: the pre-document price-shopping race)
+  // ================================================================
+  // Deliberately NOT the full wizard: no document checklist, no form —
+  // just enough for back office to return a number fast. If the client
+  // goes ahead, "Convert to full submission" carries this exact record
+  // forward (same reference) into the real wizard at step 3.
+  function sdQuickQuoteBlank(){ return { product: null, clientName: '', clientPhone: '', clientEmail: '', quoteNotes: '' }; }
+  var sdQuickQuote = sdQuickQuoteBlank();
+  function sdRenderQuickQuote(){
+    var rules = getProductRules(sdSettingsCache);
+    var quotable = Object.keys(rules).filter(function(k){ return sdSupportsQuoteAndPayment(k); });
+    var form = document.getElementById('sdQuickQuoteForm');
+    form.innerHTML =
+      '<div class="field"><label>Product</label><select id="sdQqProduct">' +
+      '<option value="">Select…</option>' +
+      quotable.map(function(k){ return '<option value="' + k + '"' + (sdQuickQuote.product === k ? ' selected' : '') + '>' + sdEsc(rules[k].label) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field"><label>Client name</label><input id="sdQqName" value="' + sdEsc(sdQuickQuote.clientName) + '"></div>' +
+      '<div class="field"><label>Client phone (WhatsApp)</label><input id="sdQqPhone" value="' + sdEsc(sdQuickQuote.clientPhone) + '"></div>' +
+      '<div class="field"><label>What they need priced (vehicle/sum insured/etc.)</label><textarea id="sdQqNotes" rows="3" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;">' + sdEsc(sdQuickQuote.quoteNotes) + '</textarea></div>' +
+      '<button class="btn-primary" id="sdQqSubmit">Request quote number &rarr;</button>';
+    document.getElementById('sdQqSubmit').addEventListener('click', sdQuickQuoteSubmit);
+    sdRenderQuickQuoteList();
+  }
+  function sdQuickQuoteSubmit(){
+    var rules = getProductRules(sdSettingsCache);
+    var product = document.getElementById('sdQqProduct').value;
+    var clientName = document.getElementById('sdQqName').value.trim();
+    var clientPhone = document.getElementById('sdQqPhone').value.trim();
+    var quoteNotes = document.getElementById('sdQqNotes').value.trim();
+    if (!product || !clientName || !clientPhone) {
+      sdShowModal('Missing info', '<p>Pick a product and fill in the client\'s name and phone number before requesting a quote.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]);
+      return;
+    }
+    var pr = rules[product] || {};
+    var record = {
+      product: product,
+      agentCode: sdSession.code,
+      agentName: sdSession.name,
+      branch: sdSession.branch,
+      clientName: clientName,
+      clientPhone: clientPhone,
+      clientEmail: '',
+      formData: JSON.stringify({ _quoteNotes: quoteNotes }),
+      documents: JSON.stringify([]),
+      cutoffApplies: !!pr.cutoffApplies,
+      status: sdStageLabel(product, 'quoted'),
+      nextAction: 'Return quote number',
+      quoteNotes: quoteNotes
+    };
+    dataLayer.createSubmission(record).then(function(sub){
+      return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Quote requested by ' + sdSession.name + ' — racing the cutoff, before documents are ready.' });
+    }).then(function(){
+      sdQuickQuote = sdQuickQuoteBlank();
+      sdRenderQuickQuote();
+    });
+  }
+  function sdRenderQuickQuoteList(){
+    dataLayer.listSubmissions({ agentCode: sdSession.code }).then(function(subs){
+      var open = subs.filter(function(s){ return sdStageKey(s.product, s.status) === 'quoted'; });
+      open.sort(function(a, b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+      var list = document.getElementById('sdQuickQuoteList');
+      if (!open.length) { list.innerHTML = '<div class="sd-empty">No open quotes right now.</div>'; return; }
+      var rules = getProductRules(sdSettingsCache);
+      list.innerHTML = open.map(function(s){
+        return '<div class="sd-row" data-id="' + s.id + '">' +
+          '<div class="sd-row-main"><strong>' + sdEsc(s.clientName) + ' &mdash; ' + sdEsc((rules[s.product] || {}).label || s.product) + '</strong>' +
+          '<span class="mono">' + sdEsc(s.id) + ' &middot; quoted ' + sdFmtDateTime(s.createdAt) + '</span></div>' +
+          '<span class="sd-pill ' + sdStatusPillClass(s.status, s.product) + '">' + sdEsc(s.status) + '</span>' +
+          '<button type="button" class="btn-primary" data-convert="' + s.id + '" style="margin-left:8px;">Client is going ahead &rarr;</button>' +
+          '</div>';
+      }).join('');
+      list.querySelectorAll('[data-convert]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var id = btn.getAttribute('data-convert');
+          var s = open.filter(function(x){ return x.id === id; })[0];
+          if (!s) return;
+          sdWizardClearDraft();
+          sdWizard = Object.assign(sdWizardBlank(), {
+            step: 3, quoteId: s.id, product: s.product,
+            clientName: s.clientName, clientPhone: s.clientPhone, clientEmail: s.clientEmail || ''
+          });
+          sdWizardDraftChecked = true;
+          sdWizardSaveDraft();
+          sdGoToView('newsub');
+        });
+      });
+    });
+  }
+
+  // ================================================================
   // Agent — New Submission wizard (4 steps)
   // ================================================================
   function sdWizardDraftKey(){ return 'genassist_sd_wizard_draft_' + (sdSession ? sdSession.code : 'anon'); }
   function sdWizardBlank(){
-    return { step: 1, product: null, subtype: '', clientName: '', clientPhone: '', clientEmail: '', notes: '', docChecks: {}, documents: [] };
+    return { step: 1, product: null, subtype: '', clientName: '', clientPhone: '', clientEmail: '', notes: '', docChecks: {}, documents: [], quoteId: null };
+  }
+  // Shared with the quick-quote conversion path below: the ack SLA clock
+  // starts the moment a file is actually complete, so both a brand-new
+  // submission and a quote converting into one need this computed fresh
+  // at the moment of submit — never inherited from an earlier quote.
+  function sdComputeIntakeSla(pr){
+    var cutoffApplies = !!(pr && pr.cutoffApplies);
+    var slaDue = addBusinessHours(nowInTrinidad(), (sdSettingsCache.ackSlaHours || 2), sdSettingsCache);
+    return { cutoffApplied: cutoffApplies && cutoffPassedToday(sdSettingsCache), slaAcknowledgeDue: slaDue.toISOString() };
   }
   var sdWizard = sdWizardBlank();
   var sdWizardDraftChecked = false;
@@ -3590,6 +3714,8 @@
     var pr = rules[sdWizard.product] || {};
     var formData = sdSerializeForm(pr.formPanelId);
     if (sdWizard.notes) formData._notes = sdWizard.notes;
+    var isConversion = !!sdWizard.quoteId;
+    var sla = sdComputeIntakeSla(pr);
     var record = {
       product: sdWizard.product,
       subtype: sdWizard.subtype,
@@ -3603,14 +3729,29 @@
       documents: JSON.stringify(sdWizard.documents.map(function(d){ return { name: d.name, mime: d.mime }; })),
       cutoffApplies: !!pr.cutoffApplies
     };
+    // A quote converting into a full submission stays on the SAME thread —
+    // never a new reference — but the 11:00 AM clock starts now, at the
+    // moment it actually becomes complete, not back when the quote was asked.
+    if (isConversion) {
+      record.status = sdStageLabel(sdWizard.product, 'submitted');
+      record.submittedAt = new Date().toISOString();
+      record.cutoffApplied = sla.cutoffApplied;
+      record.slaAcknowledgeDue = sla.slaAcknowledgeDue;
+      record.owner = '';
+      record.nextAction = 'Acknowledge';
+      record.nextActionDue = sla.slaAcknowledgeDue;
+    }
     var submitBtn = document.getElementById('sdWizSubmit');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
-    dataLayer.createSubmission(record).then(function(sub){
+    var savePromise = isConversion
+      ? dataLayer.updateSubmission(sdWizard.quoteId, record)
+      : dataLayer.createSubmission(record);
+    savePromise.then(function(sub){
       var uploads = sdWizard.documents.map(function(d){
         return dataLayer.uploadFile(sub.id, { name: d.name, mime: d.mime, dataBase64: (d.dataUrl || '').split(',')[1] || '' });
       });
       return Promise.all(uploads).then(function(){
-        return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Submission created by ' + sdSession.name + '.' });
+        return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: isConversion ? ('Quote converted into a full submission by ' + sdSession.name + '.') : ('Submission created by ' + sdSession.name + '.') });
       }).then(function(){ return sub; });
     }).then(function(sub){
       sdWizardClearDraft();
@@ -3754,18 +3895,86 @@
         '</div>';
     }
     if (stageKey === 'approved') {
+      // Insurance products collect payment before documents are issued;
+      // claims don't (the "issued" stage there is the payout itself),
+      // so claims skip straight to the issue button.
+      if (sdSupportsQuoteAndPayment(product)) {
+        return '<h3>Underwriting outcome</h3>' +
+          '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+          '<button class="btn-primary" id="sdQUwRequestPayment">Request payment</button>' +
+          '</div>';
+      }
+      return '<h3>Underwriting outcome</h3>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+        '<button class="btn-primary" id="sdQUwIssue">Mark ' + sdEsc(sdStageLabel(product, 'issued')) + '</button>' +
+        '</div>';
+    }
+    if (stageKey === 'paymentPending') {
+      return '<h3>Payment</h3>' +
+        '<p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 10px;">' + sdEsc(product && (getProductRules(sdSettingsCache)[product] || {}).label || '') + ' — waiting on ' + sdEsc('the client\'s payment before documents can be issued.') + '</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+        '<button class="btn-primary" id="sdQUwPaymentReceived">Payment received</button>' +
+        '</div>';
+    }
+    if (stageKey === 'paymentReceived') {
       return '<h3>Underwriting outcome</h3>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
         '<button class="btn-primary" id="sdQUwIssue">Mark ' + sdEsc(sdStageLabel(product, 'issued')) + '</button>' +
         '</div>';
     }
     if (stageKey === 'declined' || stageKey === 'issued') {
+      var renewalBtn = (stageKey === 'issued' && sdSupportsQuoteAndPayment(product))
+        ? '<button class="btn-ghost" id="sdQUwCreateRenewal">Create renewal reminder</button>' : '';
       return '<h3>Underwriting outcome</h3>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
-        '<button class="btn-ghost" id="sdQUwClose">Close file</button>' +
+        '<button class="btn-ghost" id="sdQUwClose">Close file</button>' + renewalBtn +
+        '</div>';
+    }
+    if (stageKey === 'closed' && sdSupportsQuoteAndPayment(product)) {
+      return '<h3>Renewal</h3>' +
+        '<p style="font-size:12.5px;color:var(--ink-soft);margin:-4px 0 10px;">Hasn\'t been renewed yet, or already has — check the timeline below before starting another one.</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px;">' +
+        '<button class="btn-ghost" id="sdQUwCreateRenewal">Create renewal reminder</button>' +
         '</div>';
     }
     return '';
+  }
+  // ---- Renewal (Stage 5 plumbing): spins up a NEW, linked thread (parentRef
+  // points back at the policy being renewed) a month ahead of the date the
+  // business was actually put through, carrying the client/product forward
+  // so nothing is retyped. It starts at the 'quoted' stage because a renewal
+  // is structurally the same ask as a fresh quote: back office has to liaise
+  // with Tatil on claims history, rate changes and vehicle value before
+  // requoting — it's not a rubber stamp. ----
+  function sdCreateRenewalThread(sub){
+    var rules = getProductRules(sdSettingsCache);
+    var pr = rules[sub.product] || {};
+    var record = {
+      product: sub.product,
+      subtype: sub.subtype,
+      agentCode: sub.agentCode,
+      agentName: sub.agentName,
+      branch: sub.branch,
+      clientName: sub.clientName,
+      clientPhone: sub.clientPhone,
+      clientEmail: sub.clientEmail,
+      formData: sub.formData,
+      documents: JSON.stringify([]),
+      cutoffApplies: !!pr.cutoffApplies,
+      status: sdStageLabel(sub.product, 'quoted'),
+      nextAction: 'Liaise with Tatil — confirm claims history, rate change, vehicle value before requoting',
+      nextActionDue: addBusinessHours(nowInTrinidad(), 48, sdSettingsCache).toISOString(),
+      parentRef: sub.id
+    };
+    dataLayer.createSubmission(record).then(function(newSub){
+      return Promise.all([
+        dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Renewal reminder started — new thread ' + newSub.id + '.' }),
+        dataLayer.addEvent(newSub.id, { type: 'status_change', actor: sdSession.name, text: 'Renewal of ' + sub.id + ' — liaising with Tatil on claims history, rate change, and vehicle value before requoting.' })
+      ]).then(function(){ return newSub; });
+    }).then(function(newSub){
+      sdShowQueueDetail(sub.id); sdRenderQueue();
+      sdShowModal('Renewal reminder created', '<p style="font-size:13.5px;">New linked thread <strong class="mono">' + sdEsc(newSub.id) + '</strong> — same client and product, carried forward. Find it in the Queue (All filter) to liaise with Tatil and requote.</p>', [{ label: 'OK', primary: true, onClick: sdCloseModal }]);
+    });
   }
   function sdOpenUwDecisionModal(sub, outcomeKey){
     var decisionLabel = sdStageLabel(sub.product, outcomeKey);
@@ -3817,9 +4026,55 @@
     var isBtn = document.getElementById('sdQUwIssue');
     if (isBtn) isBtn.addEventListener('click', function(){
       var issuedLabel = sdStageLabel(sub.product, 'issued');
-      dataLayer.updateSubmission(sub.id, { status: issuedLabel, nextAction: 'Close file', nextActionDue: addBusinessHours(nowInTrinidad(), 24, sdSettingsCache).toISOString() }).then(function(){
+      // issuedAt anchors the renewal reminder — the business process reminds
+      // the client a month ahead of the date business was actually put through.
+      dataLayer.updateSubmission(sub.id, { status: issuedLabel, issuedAt: new Date().toISOString(), nextAction: 'Close file', nextActionDue: addBusinessHours(nowInTrinidad(), 24, sdSettingsCache).toISOString() }).then(function(){
         return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: issuedLabel + '.' });
-      }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); });
+      }).then(function(){
+        sdShowQueueDetail(sub.id); sdRenderQueue();
+        if (sdSupportsQuoteAndPayment(sub.product)) sdMessageClientModal(sub, 'documentsReady');
+      });
+    });
+    // ---- Payment (Stage 3): third-party is one full annual payment;
+    // fully comprehensive can be a 2-part payment, with documents issued
+    // once the first part/full amount actually lands. ----
+    var reqPayBtn = document.getElementById('sdQUwRequestPayment');
+    if (reqPayBtn) reqPayBtn.addEventListener('click', function(){
+      sdShowModal('Request payment', '<div class="field"><label>Payment plan</label><select id="sdPayPlan"><option value="Full annual payment">Full annual payment (Third Party)</option><option value="2-part payment">2-part payment (Fully Comprehensive)</option></select></div>' +
+        '<div class="field"><label>How the client will pay</label><select id="sdPayMode"><option value="Cash at ARAL office">Cash at ARAL office</option><option value="Online payment to ARAL">Online payment to ARAL</option><option value="Cheque">Cheque</option></select></div>' +
+        '<div class="field"><label>Amount due (optional)</label><input type="text" id="sdPayAmount" placeholder="e.g. 3450.00"></div>', [
+        { label: 'Cancel', onClick: sdCloseModal },
+        { label: 'Send payment request', primary: true, onClick: function(){
+          var plan = document.getElementById('sdPayPlan').value;
+          var mode = document.getElementById('sdPayMode').value;
+          var amount = document.getElementById('sdPayAmount').value.trim();
+          var pendingLabel = sdStageLabel(sub.product, 'paymentPending');
+          dataLayer.updateSubmission(sub.id, { status: pendingLabel, paymentPlan: plan, paymentMode: mode, paymentAmountDue: amount, nextAction: 'Confirm payment received', nextActionDue: addBusinessHours(nowInTrinidad(), 24, sdSettingsCache).toISOString() }).then(function(){
+            return dataLayer.addEvent(sub.id, { type: 'payment', actor: sdSession.name, text: 'Payment requested — ' + plan + ' via ' + mode + (amount ? (', ' + amount) : '') + '.' });
+          }).then(function(){
+            sdCloseModal();
+            sdShowQueueDetail(sub.id); sdRenderQueue();
+            sdMessageClientModal(sub, 'paymentDue', { paymentText: plan === '2-part payment' ? "Comprehensive cover allows a 2-part payment — once the first part is in we can issue your policy and collect the balance shortly after." : "This is a full annual payment to put the policy through." });
+          });
+        } }
+      ]);
+    });
+    var payRecvBtn = document.getElementById('sdQUwPaymentReceived');
+    if (payRecvBtn) payRecvBtn.addEventListener('click', function(){
+      sdShowModal('Confirm payment received', '<div class="field"><label>Amount received</label><input type="text" id="sdPayReceivedAmount" placeholder="e.g. 3450.00"></div><div class="field"><label>Notes (optional — e.g. "part 1 of 2")</label><input type="text" id="sdPayReceivedNote"></div>', [
+        { label: 'Cancel', onClick: sdCloseModal },
+        { label: 'Confirm received', primary: true, onClick: function(){
+          var amount = document.getElementById('sdPayReceivedAmount').value.trim();
+          var note = document.getElementById('sdPayReceivedNote').value.trim();
+          var receivedLabel = sdStageLabel(sub.product, 'paymentReceived');
+          dataLayer.updateSubmission(sub.id, { status: receivedLabel, paymentAmountReceived: amount, paymentReceivedAt: new Date().toISOString(), nextAction: 'Prepare documents for issue', nextActionDue: addBusinessHours(nowInTrinidad(), 4, sdSettingsCache).toISOString() }).then(function(){
+            return dataLayer.addEvent(sub.id, { type: 'payment', actor: sdSession.name, text: 'Payment received' + (amount ? (': ' + amount) : '') + (note ? (' — ' + note) : '') + '.' });
+          }).then(function(){
+            sdCloseModal();
+            sdShowQueueDetail(sub.id); sdRenderQueue();
+          });
+        } }
+      ]);
     });
     var clBtn = document.getElementById('sdQUwClose');
     if (clBtn) clBtn.addEventListener('click', function(){
@@ -3828,6 +4083,8 @@
         return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'File closed.' });
       }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); });
     });
+    var renewBtn = document.getElementById('sdQUwCreateRenewal');
+    if (renewBtn) renewBtn.addEventListener('click', function(){ sdCreateRenewalThread(sub); });
   }
   function sdShowQueueDetail(id){
     Promise.all([dataLayer.getSubmission(id), dataLayer.listEvents(id), dataLayer.listAgents()]).then(function(res){
@@ -3857,6 +4114,8 @@
         '<tr><th>Client</th><td>' + sdEsc(sub.clientName) + ' &middot; ' + sdEsc(sub.clientPhone) + (sub.clientEmail ? ' &middot; ' + sdEsc(sub.clientEmail) : '') + '</td></tr>' +
         '<tr><th>Required docs</th><td>' + (rules.requiredDocs || []).map(sdEsc).join('; ') + '</td></tr>' +
         '<tr><th>Attached files</th><td>' + (docs.length ? docs.map(function(d){ return sdEsc(d.name); }).join(', ') : 'None attached') + '</td></tr>' +
+        (sub.parentRef ? '<tr><th>Linked to</th><td class="mono">' + sdEsc(sub.parentRef) + '</td></tr>' : '') +
+        (sub.paymentPlan ? '<tr><th>Payment</th><td>' + sdEsc(sub.paymentPlan) + ' via ' + sdEsc(sub.paymentMode || '') + (sub.paymentAmountDue ? (' — due ' + sdEsc(sub.paymentAmountDue)) : '') + (sub.paymentAmountReceived ? (' — received ' + sdEsc(sub.paymentAmountReceived) + ' (' + sdFmtDateTime(sub.paymentReceivedAt) + ')') : '') + '</td></tr>' : '') +
         '</tbody></table>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">' +
         '<button class="btn-ghost" id="sdQAck">Acknowledge</button>' +
