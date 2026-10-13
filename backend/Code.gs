@@ -386,8 +386,12 @@ function checkRenewals_() {
 
     var eventsSheet = getSheet_('Events');
     var ts = new Date().toISOString();
-    appendObjectRow_(eventsSheet, { id: 'EV-' + Date.now() + '-1', submissionId: r.id, type: 'status_change', actor: 'System (renewal reminder)', text: 'Renewal reminder started automatically — new thread ' + created.id + '.', createdAt: ts });
-    appendObjectRow_(eventsSheet, { id: 'EV-' + Date.now() + '-2', submissionId: created.id, type: 'status_change', actor: 'System (renewal reminder)', text: 'Renewal of ' + r.id + ' — liaising with Tatil on claims history, rate change, and vehicle value before requoting.', createdAt: ts });
+    // Match the random-suffix convention used by handleEventsAdd_ (line ~411)
+    // rather than a fixed '-1'/'-2' suffix — Date.now() alone isn't unique
+    // enough when checkRenewals_ creates several renewal threads in the same
+    // run (two different submissions could land on the same millisecond).
+    appendObjectRow_(eventsSheet, { id: 'EV-' + Date.now() + '-' + Math.floor(Math.random() * 1000), submissionId: r.id, type: 'status_change', actor: 'System (renewal reminder)', text: 'Renewal reminder started automatically — new thread ' + created.id + '.', createdAt: ts });
+    appendObjectRow_(eventsSheet, { id: 'EV-' + Date.now() + '-' + Math.floor(Math.random() * 1000), submissionId: created.id, type: 'status_change', actor: 'System (renewal reminder)', text: 'Renewal of ' + r.id + ' — liaising with Tatil on claims history, rate change, and vehicle value before requoting.', createdAt: ts });
   });
 }
 
