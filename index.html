@@ -3054,7 +3054,7 @@
   }
   var AppsScriptAdapter = {
     init: function(){ return Promise.resolve(); },
-    authenticateAgent: function(code, pin){ return sdCallAppsScript('auth.login', { code: code, pin: pin }); },
+    authenticateAgent: function(code, pin){ return sdCallAppsScript('auth.login', { code: code, pin: pin }).then(function(r){ return r.ok ? { ok: true, agent: r.data.agent } : { ok: false, error: r.error }; }); },
     listSubmissions: function(filter){ return sdCallAppsScript('submissions.list', { filter: filter || {} }).then(function(r){ return r.ok ? r.data : []; }); },
     getSubmission: function(id){ return sdCallAppsScript('submissions.get', { id: id }).then(function(r){ return r.ok ? r.data : null; }); },
     createSubmission: function(data){ return sdCallAppsScript('submissions.create', { data: data }).then(function(r){ return r.ok ? r.data : null; }); },
