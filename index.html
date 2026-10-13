@@ -4095,6 +4095,13 @@
       var backOfficeAgents = agents.filter(function(a){ return a.role === 'backoffice' || a.role === 'admin'; });
       var rules = getProductRules(sdSettingsCache)[sub.product] || {};
       var docs = []; try { docs = JSON.parse(sub.documents || '[]'); } catch (e) {}
+      // Acknowledge / Request missing info / Send to Underwriting only make
+      // sense pre-underwriting; once a file is at 'sent' or beyond, the
+      // Underwriting outcome section (sdUwOutcomeSectionHtml) takes over.
+      var stageKey = sdStageKey(sub.product, sub.status);
+      var showAck = stageKey === 'submitted';
+      var showNeedsInfo = stageKey === 'submitted' || stageKey === 'ack';
+      var showSendUw = stageKey === 'ack';
       card.innerHTML =
         '<h2>' + sdEsc(sub.clientName) + ' &mdash; ' + sdEsc(sub.id) + '</h2>' +
         sdRenderRoute(sub.status, sub.product) +
@@ -4118,9 +4125,9 @@
         (sub.paymentPlan ? '<tr><th>Payment</th><td>' + sdEsc(sub.paymentPlan) + ' via ' + sdEsc(sub.paymentMode || '') + (sub.paymentAmountDue ? (' — due ' + sdEsc(sub.paymentAmountDue)) : '') + (sub.paymentAmountReceived ? (' — received ' + sdEsc(sub.paymentAmountReceived) + ' (' + sdFmtDateTime(sub.paymentReceivedAt) + ')') : '') + '</td></tr>' : '') +
         '</tbody></table>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">' +
-        '<button class="btn-ghost" id="sdQAck">Acknowledge</button>' +
-        '<button class="btn-ghost" id="sdQNeedsInfo">Request missing info</button>' +
-        '<button class="btn-ghost" id="sdQSendUw">Send to Underwriting</button>' +
+        (showAck ? '<button class="btn-ghost" id="sdQAck">Acknowledge</button>' : '') +
+        (showNeedsInfo ? '<button class="btn-ghost" id="sdQNeedsInfo">Request missing info</button>' : '') +
+        (showSendUw ? '<button class="btn-ghost" id="sdQSendUw">Send to Underwriting</button>' : '') +
         '<button class="btn-ghost" id="sdQMessage">Message client</button>' +
         '</div>' +
         sdUwOutcomeSectionHtml(sdStageKey(sub.product, sub.status), sub.product) +
@@ -4138,13 +4145,13 @@
           return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Owner/next action updated: ' + nextAction + ' by ' + sdFmtDateTime(new Date(due).toISOString()) + '.' });
         }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); });
       });
-      document.getElementById('sdQAck').addEventListener('click', function(){
+      if (showAck) document.getElementById('sdQAck').addEventListener('click', function(){
         var due = addBusinessHours(nowInTrinidad(), sdSettingsCache.ackSlaHours || 2, sdSettingsCache);
         dataLayer.updateSubmission(sub.id, { status: 'Acknowledged', owner: sub.owner || sdSession.code, nextAction: sdSettingsCache.gmApprovalRequired ? 'Branch GM approval' : 'Prepare for Underwriting', nextActionDue: due.toISOString() }).then(function(){
           return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Acknowledged by back office.' });
         }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); sdMessageClientModal(sub, 'acknowledged'); });
       });
-      document.getElementById('sdQNeedsInfo').addEventListener('click', function(){
+      if (showNeedsInfo) document.getElementById('sdQNeedsInfo').addEventListener('click', function(){
         sdShowModal('Request missing info', '<div class="field"><label>What is missing? (sent to the agent as one consolidated note)</label><textarea id="sdNeedsInfoText" rows="4" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--paper-sunk);color:var(--ink);font-size:13px;"></textarea></div>', [
           { label: 'Cancel', onClick: sdCloseModal },
           { label: 'Send request', primary: true, onClick: function(){
@@ -4160,7 +4167,7 @@
           } }
         ]);
       });
-      document.getElementById('sdQSendUw').addEventListener('click', function(){
+      if (showSendUw) document.getElementById('sdQSendUw').addEventListener('click', function(){
         dataLayer.updateSubmission(sub.id, { status: sdStageLabel(sub.product, 'sent'), nextAction: '', nextActionDue: '' }).then(function(){
           return dataLayer.addEvent(sub.id, { type: 'status_change', actor: sdSession.name, text: 'Sent to Underwriting.' });
         }).then(function(){ sdShowQueueDetail(sub.id); sdRenderQueue(); sdMessageClientModal(sub, 'sentToUnderwriting'); });
