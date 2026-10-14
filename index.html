@@ -332,6 +332,18 @@
   .sd-pickitem.selected{border-color:var(--seal);background:var(--seal-soft);color:var(--seal);}
   .sd-pickitem.selected span{color:var(--seal);}
 
+  .sd-wiz-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0 12px;}
+  .sd-wiz-back:hover{color:var(--seal);}
+  .sd-picktiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media (max-width:760px){ .sd-picktiles{grid-template-columns:1fr;} }
+  .sd-picktile{position:relative;border:2px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;background:var(--paper-sunk);padding:0;display:block;text-align:left;}
+  .sd-picktile:hover{border-color:var(--seal);}
+  .sd-picktile img{display:block;width:100%;height:220px;object-fit:cover;}
+  .sd-picktile .sd-picktile-label{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,0));color:#fff;font-weight:700;font-size:14px;}
+  .sd-picktiles-sub{grid-template-columns:repeat(2,1fr);max-width:460px;}
+  @media (max-width:480px){ .sd-picktiles-sub{grid-template-columns:1fr;} }
+  .sd-picktile-sub img{height:150px;object-fit:contain;background:var(--paper);padding:14px;}
+
   .sd-list{display:flex;flex-direction:column;gap:10px;}
   .sd-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--paper-sunk);border:1px solid var(--line);border-radius:9px;padding:12px 16px;}
   .sd-row-main{flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px;}
@@ -2677,134 +2689,246 @@
   // product's own form applies; Other is free-text).
   // Admins can override requiredDocs/cutoffApplies at runtime via
   // Settings.productRuleOverrides without touching this code. ----
-  var PRODUCT_RULES = {
+  // ----------------------------------------------------------------
+  // Wizard navigation tree (Step 1): Motor / Property / Health, each
+  // drilling into a sub-type (where applicable) then an action.
+  // Each leaf maps to one PRODUCT_RULES key via sdWizardProductKey().
+  // ----------------------------------------------------------------
+  var WIZARD_TREE = {
     motor: {
       label: 'Motor',
-      formTab: 'motorproposal',
-      formPanelId: 'form-motorproposal',
-      readyTextId: 'mp-readyText',
-      cutoffApplies: true,
-      requiredDocs: [
-        'Valid ID (driver’s licence or national ID)',
-        'Vehicle registration (certified copy)',
-        'Completed & signed Motor Insurance Proposal form',
-        'Photos of the vehicle (all 4 sides)',
-        'Current No-Claims Discount letter / renewal notice (if applicable)'
+      image: 'images/wizard-types/motor_top.png',
+      subtypes: {
+        commercial: { label: 'Commercial', image: 'images/wizard-types/motor_commercial.png' },
+        personal: { label: 'Personal', image: 'images/wizard-types/motor_personal.png' }
+      },
+      actions: [
+        { key: 'renewal', label: 'Renewal' },
+        { key: 'change', label: 'Change in Policy' },
+        { key: 'first', label: 'First Timer' },
+        { key: 'claims', label: 'Claims' }
       ]
     },
-    property_residential: {
-      label: 'Property — Residential (Homesure)',
-      formTab: 'homesure',
-      formPanelId: 'form-homesure',
-      readyTextId: 'hs-readyText',
-      cutoffApplies: true,
-      requiredDocs: [
-        'Valid ID',
-        'Proof of address',
-        'Completed & signed Homesure Proposal form',
-        'Recent photos of the property (exterior + interior)',
-        'List of items & valuations (if All Risks cover is requested)'
+    property: {
+      label: 'Property',
+      image: 'images/wizard-types/property_top.png',
+      subtypes: {
+        commercial: { label: 'Commercial', image: 'images/wizard-types/property_commercial.png' },
+        residential: { label: 'Residential', image: 'images/wizard-types/property_residential.png' }
+      },
+      actions: [
+        { key: 'renewal', label: 'Renewal' },
+        { key: 'conversion', label: 'Conversion' },
+        { key: 'claims', label: 'Claims' },
+        { key: 'first', label: 'First Timer' }
       ]
     },
-    property_commercial: {
-      label: 'Property — Commercial (Fire Insurance)',
-      formTab: 'fireproposal',
-      formPanelId: 'form-fireproposal',
-      readyTextId: 'fp-readyText',
-      cutoffApplies: true,
-      requiredDocs: [
-        'Valid ID / company registration',
-        'Completed & signed Fire Insurance Proposal form',
-        'Recent photos of the premises',
-        'Stock / asset valuation (if applicable)'
+    health: {
+      label: 'Health',
+      image: 'images/wizard-types/health_top.png',
+      subtypes: null,
+      actions: [
+        { key: 'renewal', label: 'Renewal' },
+        { key: 'conversion', label: 'Conversion' },
+        { key: 'first', label: 'First Timer' },
+        { key: 'claims', label: 'Claims' }
       ]
+    }
+  };
+  function sdWizardProductKey(vertical, sub, action){
+    return sub ? (vertical + '_' + sub + '_' + action) : (vertical + '_' + action);
+  }
+
+  var MOTOR_DOCS_PERSONAL_FIRST = [
+    'Valid ID (driver’s licence or national ID)',
+    'Vehicle registration (certified copy)',
+    'Completed & signed Motor Insurance Proposal form',
+    'Completed KYC Form',
+    'Photos of the vehicle (all 4 sides)',
+    'Current No-Claims Discount letter / renewal notice (if applicable)'
+  ];
+  var MOTOR_DOCS_COMMERCIAL_FIRST = [
+    'Valid ID (driver’s licence or national ID)',
+    'Vehicle registration (certified copy)',
+    'Completed & signed Motor Insurance Proposal form',
+    'Completed Corporate KYC Form',
+    'Certificate of Registration of the business',
+    'Photos of the vehicle (all 4 sides)',
+    'Current No-Claims Discount letter / renewal notice (if applicable)'
+  ];
+  var MOTOR_DOCS_RENEWAL = [
+    'Valid driver’s licence (expiry date logged for renewal reminders)',
+    'Updated answers for anything that has changed since the last proposal',
+    'Payment confirmation'
+  ];
+  var MOTOR_DOCS_CHANGE = [
+    'Valid ID',
+    'Completed & signed Change in Policy form (Comprehensive → Third Party only)',
+    'Letter from bank confirming the vehicle is not currently mortgaged/financed (non-indebted letter)'
+  ];
+  var MOTOR_DOCS_CLAIMS = [
+    'Completed & signed Motor Vehicle Accident Report form',
+    'Police report / station reference (if applicable)',
+    'Photos of vehicle damage',
+    'Repair estimate',
+    'Driver’s licence copy'
+  ];
+  var PROPERTY_DOCS_RESIDENTIAL_FIRST = [
+    'Valid ID',
+    'Proof of address',
+    'Completed & signed Homesure Proposal form',
+    'Recent photos of the property (exterior + interior)',
+    'List of items & valuations (if All Risks cover is requested)'
+  ];
+  var PROPERTY_DOCS_COMMERCIAL_FIRST = [
+    'Valid ID / company registration',
+    'Completed & signed Fire Insurance Proposal form',
+    'Recent photos of the premises',
+    'Stock / asset valuation (if applicable)'
+  ];
+  var PROPERTY_DOCS_RENEWAL = [
+    'Valid ID (if expired since last renewal)',
+    'Updated answers for anything that has changed since the last proposal',
+    'Payment confirmation'
+  ];
+  var PROPERTY_DOCS_CONVERSION = [
+    'Valid ID',
+    'Completed & signed Conversion Request form',
+    'Supporting documents for the specific change requested'
+  ];
+  var PROPERTY_DOCS_CLAIMS = [
+    'Completed & signed Loss of or Damage to Property Claim form',
+    'Police / Fire report reference (if applicable)',
+    'Photos of the damage',
+    'Proof of ownership / purchase receipts for claimed items'
+  ];
+  var HEALTH_DOCS_FIRST = [
+    'Copy of ID',
+    'Birth Certificate',
+    'Immunization Card (if applicable)',
+    'Utility Bill (≤ 3 months old)',
+    'Bank Statement',
+    'Completed KYC Form',
+    'Completed Covercare Proposal form'
+  ];
+  var HEALTH_DOCS_CONVERSION = [
+    'Copy of ID',
+    'Birth Certificate',
+    'Immunization Card',
+    'Utility Bill (≤ 3 months old)',
+    'Bank Statement',
+    'Completed KYC Form',
+    'Medical Reports (if requested)',
+    'Premium receipt',
+    'Stamped Deduction Order',
+    'Agent’s Report',
+    'Beneficiary ID'
+  ];
+  var HEALTH_DOCS_RENEWAL = [
+    'Valid ID (if expired since last renewal)',
+    'Updated answers for anything that has changed since the last proposal',
+    'Payment confirmation'
+  ];
+  var HEALTH_DOCS_CLAIMS = [
+    'Completed & signed Covercare Claim Form',
+    'Original itemized medical invoices / receipts',
+    'Diagnosis / medical report from attending physician (where applicable)',
+    'Copy of ID',
+    'Proof of payment already made (if claiming reimbursement)'
+  ];
+
+  var PRODUCT_RULES = {
+    motor_personal_first: {
+      label: 'Motor — Personal — First Timer',
+      formTab: 'motorproposal', formPanelId: 'form-motorproposal', readyTextId: 'mp-readyText',
+      cutoffApplies: true, requiredDocs: MOTOR_DOCS_PERSONAL_FIRST
     },
-    covercare_new: {
-      label: 'Covercare — New Application',
-      formTab: 'ccproposal',
-      formPanelId: 'form-ccproposal',
-      readyTextId: 'ccpReadyText',
-      cutoffApplies: true,
-      requiredDocs: [
-        'Copy of ID',
-        'Birth Certificate',
-        'Immunization Card (if applicable)',
-        'Utility Bill (≤ 3 months old)',
-        'Bank Statement',
-        'Completed KYC Form',
-        'Completed Covercare Proposal form'
-      ]
+    motor_personal_renewal: {
+      label: 'Motor — Personal — Renewal',
+      formTab: null, cutoffApplies: true, requiredDocs: MOTOR_DOCS_RENEWAL
     },
-    covercare_conversion: {
-      label: 'Covercare — Existing Member Conversion',
-      formTab: 'covercare',
-      formPanelId: 'form-covercare',
-      readyTextId: 'ccReadyText',
-      cutoffApplies: true,
-      requiredDocs: [
-        'Copy of ID',
-        'Birth Certificate',
-        'Immunization Card',
-        'Utility Bill (≤ 3 months old)',
-        'Bank Statement',
-        'Completed KYC Form',
-        'Medical Reports (if requested)',
-        'Premium receipt',
-        'Stamped Deduction Order',
-        'Agent’s Report',
-        'Beneficiary ID'
-      ]
+    motor_personal_change: {
+      label: 'Motor — Personal — Change in Policy',
+      formTab: 'change', formPanelId: 'form-change', readyTextId: 'chgReadyText',
+      cutoffApplies: true, mortgageGate: true, requiredDocs: MOTOR_DOCS_CHANGE
     },
-    change: {
-      label: 'Change in Policy',
-      formTab: 'change',
-      formPanelId: 'form-change',
-      readyTextId: 'chgReadyText',
-      cutoffApplies: true,
-      requiredDocs: [
-        'Valid ID',
-        'Completed & signed Change in Policy form',
-        'Supporting documents for the specific change requested'
-      ]
+    motor_personal_claims: {
+      label: 'Motor — Personal — Claims',
+      formTab: 'motorclaim', formPanelId: 'form-motorclaim', readyTextId: 'mc-readyText',
+      cutoffApplies: true, statusFamily: 'claims', requiredDocs: MOTOR_DOCS_CLAIMS
     },
-    renewal: {
-      label: 'Renewal',
-      formTab: null, // reuses whichever product's own proposal tab applies
-      cutoffApplies: true,
-      requiredDocs: [
-        'Valid ID (if expired since last renewal)',
-        'Updated answers for anything that has changed since the last proposal',
-        'Payment confirmation'
-      ]
+    motor_commercial_first: {
+      label: 'Motor — Commercial — First Timer',
+      formTab: 'motorproposal', formPanelId: 'form-motorproposal', readyTextId: 'mp-readyText',
+      cutoffApplies: true, requiredDocs: MOTOR_DOCS_COMMERCIAL_FIRST
     },
-    claims_motor: {
-      label: 'Claims — Motor',
-      formTab: 'motorclaim',
-      formPanelId: 'form-motorclaim',
-      readyTextId: 'mc-readyText',
-      cutoffApplies: true, // confirmed: the 11:00 AM cutoff applies to everything sent to CSR in head office, claims included
-      statusFamily: 'claims',
-      requiredDocs: [
-        'Completed & signed Motor Vehicle Accident Report form',
-        'Police report / station reference (if applicable)',
-        'Photos of vehicle damage',
-        'Repair estimate',
-        'Driver’s licence copy'
-      ]
+    motor_commercial_renewal: {
+      label: 'Motor — Commercial — Renewal',
+      formTab: null, cutoffApplies: true, requiredDocs: MOTOR_DOCS_RENEWAL
     },
-    claims_property: {
-      label: 'Claims — Property',
-      formTab: 'propertyclaim',
-      formPanelId: 'form-propertyclaim',
-      readyTextId: 'pc-readyText',
-      cutoffApplies: true, // confirmed: the 11:00 AM cutoff applies to everything sent to CSR in head office, claims included
-      statusFamily: 'claims',
-      requiredDocs: [
-        'Completed & signed Loss of or Damage to Property Claim form',
-        'Police / Fire report reference (if applicable)',
-        'Photos of the damage',
-        'Proof of ownership / purchase receipts for claimed items'
-      ]
+    motor_commercial_change: {
+      label: 'Motor — Commercial — Change in Policy',
+      formTab: 'change', formPanelId: 'form-change', readyTextId: 'chgReadyText',
+      cutoffApplies: true, mortgageGate: true, requiredDocs: MOTOR_DOCS_CHANGE
+    },
+    motor_commercial_claims: {
+      label: 'Motor — Commercial — Claims',
+      formTab: 'motorclaim', formPanelId: 'form-motorclaim', readyTextId: 'mc-readyText',
+      cutoffApplies: true, statusFamily: 'claims', requiredDocs: MOTOR_DOCS_CLAIMS
+    },
+    property_residential_first: {
+      label: 'Property — Residential — First Timer (Homesure)',
+      formTab: 'homesure', formPanelId: 'form-homesure', readyTextId: 'hs-readyText',
+      cutoffApplies: true, requiredDocs: PROPERTY_DOCS_RESIDENTIAL_FIRST
+    },
+    property_residential_renewal: {
+      label: 'Property — Residential — Renewal',
+      formTab: null, cutoffApplies: true, requiredDocs: PROPERTY_DOCS_RENEWAL
+    },
+    property_residential_conversion: {
+      label: 'Property — Residential — Conversion',
+      formTab: null, cutoffApplies: true, requiredDocs: PROPERTY_DOCS_CONVERSION
+    },
+    property_residential_claims: {
+      label: 'Property — Residential — Claims',
+      formTab: 'propertyclaim', formPanelId: 'form-propertyclaim', readyTextId: 'pc-readyText',
+      cutoffApplies: true, statusFamily: 'claims', requiredDocs: PROPERTY_DOCS_CLAIMS
+    },
+    property_commercial_first: {
+      label: 'Property — Commercial — First Timer (Fire Insurance)',
+      formTab: 'fireproposal', formPanelId: 'form-fireproposal', readyTextId: 'fp-readyText',
+      cutoffApplies: true, requiredDocs: PROPERTY_DOCS_COMMERCIAL_FIRST
+    },
+    property_commercial_renewal: {
+      label: 'Property — Commercial — Renewal',
+      formTab: null, cutoffApplies: true, requiredDocs: PROPERTY_DOCS_RENEWAL
+    },
+    property_commercial_conversion: {
+      label: 'Property — Commercial — Conversion',
+      formTab: null, cutoffApplies: true, requiredDocs: PROPERTY_DOCS_CONVERSION
+    },
+    property_commercial_claims: {
+      label: 'Property — Commercial — Claims',
+      formTab: 'propertyclaim', formPanelId: 'form-propertyclaim', readyTextId: 'pc-readyText',
+      cutoffApplies: true, statusFamily: 'claims', requiredDocs: PROPERTY_DOCS_CLAIMS
+    },
+    health_first: {
+      label: 'Health — First Timer (Covercare New Application)',
+      formTab: 'ccproposal', formPanelId: 'form-ccproposal', readyTextId: 'ccpReadyText',
+      cutoffApplies: true, requiredDocs: HEALTH_DOCS_FIRST
+    },
+    health_renewal: {
+      label: 'Health — Renewal',
+      formTab: null, cutoffApplies: true, requiredDocs: HEALTH_DOCS_RENEWAL
+    },
+    health_conversion: {
+      label: 'Health — Conversion (Existing Member)',
+      formTab: 'covercare', formPanelId: 'form-covercare', readyTextId: 'ccReadyText',
+      cutoffApplies: true, requiredDocs: HEALTH_DOCS_CONVERSION
+    },
+    health_claims: {
+      label: 'Health — Claims',
+      formTab: null, cutoffApplies: true, statusFamily: 'claims', requiredDocs: HEALTH_DOCS_CLAIMS
     },
     other: {
       label: 'Other / Not Listed',
@@ -3506,7 +3630,7 @@
   // ================================================================
   function sdWizardDraftKey(){ return 'genassist_sd_wizard_draft_' + (sdSession ? sdSession.code : 'anon'); }
   function sdWizardBlank(){
-    return { step: 1, product: null, subtype: '', clientName: '', clientPhone: '', clientEmail: '', notes: '', docChecks: {}, documents: [], quoteId: null };
+    return { step: 1, product: null, wizVertical: null, wizSub: null, wizAction: null, mortgageAnswer: null, subtype: '', clientName: '', clientPhone: '', clientEmail: '', notes: '', docChecks: {}, documents: [], quoteId: null };
   }
   // Shared with the quick-quote conversion path below: the ack SLA clock
   // starts the moment a file is actually complete, so both a brand-new
@@ -3553,26 +3677,138 @@
     html += '</div>';
     return html;
   }
+  // Step 1 is a 3-level drill-down: top-level vertical (Motor/Property/
+  // Health, image tiles) -> sub-type where applicable (Commercial/
+  // Personal or Commercial/Residential, image badges) -> action
+  // (Renewal/Change/Conversion/First Timer/Claims, text buttons).
+  // Picking an action resolves sdWizard.product via sdWizardProductKey();
+  // everything downstream of Step 1 (steps 2-4, submit) is unchanged and
+  // just keys off sdWizard.product as before.
+  function sdWizardPickerHtml(rules){
+    var v = sdWizard.wizVertical, sub = sdWizard.wizSub, action = sdWizard.wizAction;
+
+    if (!v) {
+      return '<div class="sd-card"><h2>What are we submitting?</h2>' +
+        '<div class="sd-picktiles">' +
+        Object.keys(WIZARD_TREE).map(function(key){
+          var t = WIZARD_TREE[key];
+          return '<button type="button" class="sd-picktile" data-vertical="' + key + '">' +
+            '<img src="' + t.image + '" alt="' + sdEsc(t.label) + '">' +
+            '<span class="sd-picktile-label">' + sdEsc(t.label) + '</span></button>';
+        }).join('') +
+        '</div></div>';
+    }
+
+    var branch = WIZARD_TREE[v];
+
+    if (branch.subtypes && !sub) {
+      var subKeys = Object.keys(branch.subtypes);
+      return '<div class="sd-card">' +
+        '<button type="button" class="sd-wiz-back" data-back="vertical">&larr; ' + sdEsc(branch.label) + '</button>' +
+        '<h2>' + sdEsc(branch.label) + ': ' + subKeys.map(function(k){ return branch.subtypes[k].label; }).join(' or ') + '?</h2>' +
+        '<div class="sd-picktiles sd-picktiles-sub">' +
+        subKeys.map(function(k){
+          var st = branch.subtypes[k];
+          return '<button type="button" class="sd-picktile sd-picktile-sub" data-sub="' + k + '">' +
+            '<img src="' + st.image + '" alt="' + sdEsc(st.label) + '">' +
+            '<span class="sd-picktile-label">' + sdEsc(st.label) + '</span></button>';
+        }).join('') +
+        '</div></div>';
+    }
+
+    if (!action) {
+      var backTarget = branch.subtypes ? 'sub' : 'vertical';
+      var crumb = branch.label + (sub ? ' — ' + branch.subtypes[sub].label : '');
+      return '<div class="sd-card">' +
+        '<button type="button" class="sd-wiz-back" data-back="' + backTarget + '">&larr; ' + sdEsc(crumb) + '</button>' +
+        '<h2>What would you like to do?</h2>' +
+        '<div class="sd-picker">' +
+        branch.actions.map(function(a){
+          var key = sdWizardProductKey(v, sub, a.key);
+          var r = rules[key];
+          if (!r) return '';
+          return '<button type="button" class="sd-pickitem" data-action="' + a.key + '">' + sdEsc(a.label) + (r.cutoffApplies === false ? '<span>No same-day cutoff for this type</span>' : '<span>11:00 AM cutoff applies</span>') + '</button>';
+        }).join('') +
+        '</div></div>';
+    }
+
+    var productKey = sdWizardProductKey(v, sub, action);
+    var pr = rules[productKey] || {};
+    sdWizard.product = productKey;
+
+    if (pr.mortgageGate && sdWizard.mortgageAnswer !== 'no') {
+      if (sdWizard.mortgageAnswer === 'yes') {
+        return '<div class="sd-card">' +
+          '<button type="button" class="sd-wiz-back" data-back="action">&larr; Back</button>' +
+          '<h2>This application can’t be submitted</h2>' +
+          '<p style="font-size:13px;color:var(--ink-soft);">Change in Policy only covers Comprehensive &rarr; Third Party, and only when the vehicle is free of any mortgage/financing. Since it’s currently mortgaged/financed, this request can’t proceed as a Change in Policy.</p>' +
+          '</div>';
+      }
+      return '<div class="sd-card">' +
+        '<button type="button" class="sd-wiz-back" data-back="action">&larr; Back</button>' +
+        '<h2>Is the vehicle currently mortgaged/financed?</h2>' +
+        '<p style="font-size:13px;color:var(--ink-soft);">Change in Policy only covers Comprehensive &rarr; Third Party, and only when the vehicle is not mortgaged/financed.</p>' +
+        '<div style="display:flex;gap:10px;margin-top:10px;">' +
+        '<button type="button" class="btn-primary" data-mortgage="no">No</button>' +
+        '<button type="button" class="btn-ghost" data-mortgage="yes">Yes</button>' +
+        '</div></div>';
+    }
+
+    return '<div class="sd-card">' +
+      '<button type="button" class="sd-wiz-back" data-back="action">&larr; Back</button>' +
+      '<h2>' + sdEsc(pr.label) + '</h2>' +
+      '<p style="font-size:13px;color:var(--ink-soft);">' + (pr.cutoffApplies === false ? 'No same-day cutoff for this type.' : '11:00 AM cutoff applies.') + '</p>' +
+      '</div>' +
+      '<div class="sd-card" style="display:flex;justify-content:flex-end;"><button class="btn-primary" id="sdWizNext1">Continue &rarr;</button></div>';
+  }
+  function sdWizardBindPicker(rules){
+    var body = document.getElementById('sdWizardBody');
+    body.querySelectorAll('[data-vertical]').forEach(function(b){
+      b.addEventListener('click', function(){
+        sdWizard.wizVertical = b.getAttribute('data-vertical');
+        sdWizard.wizSub = null; sdWizard.wizAction = null; sdWizard.mortgageAnswer = null; sdWizard.product = null;
+        sdWizardSaveDraft(); sdWizardRenderStep();
+      });
+    });
+    body.querySelectorAll('[data-sub]').forEach(function(b){
+      b.addEventListener('click', function(){
+        sdWizard.wizSub = b.getAttribute('data-sub');
+        sdWizard.wizAction = null; sdWizard.mortgageAnswer = null; sdWizard.product = null;
+        sdWizardSaveDraft(); sdWizardRenderStep();
+      });
+    });
+    body.querySelectorAll('[data-action]').forEach(function(b){
+      b.addEventListener('click', function(){
+        sdWizard.wizAction = b.getAttribute('data-action');
+        sdWizard.mortgageAnswer = null;
+        sdWizardSaveDraft(); sdWizardRenderStep();
+      });
+    });
+    body.querySelectorAll('[data-mortgage]').forEach(function(b){
+      b.addEventListener('click', function(){
+        sdWizard.mortgageAnswer = b.getAttribute('data-mortgage');
+        sdWizardSaveDraft(); sdWizardRenderStep();
+      });
+    });
+    var backBtn = body.querySelector('[data-back]');
+    if (backBtn) backBtn.addEventListener('click', function(){
+      var target = backBtn.getAttribute('data-back');
+      if (target === 'vertical') { sdWizard.wizVertical = null; sdWizard.wizSub = null; sdWizard.wizAction = null; sdWizard.mortgageAnswer = null; sdWizard.product = null; }
+      else if (target === 'sub') { sdWizard.wizSub = null; sdWizard.wizAction = null; sdWizard.mortgageAnswer = null; sdWizard.product = null; }
+      else if (target === 'action') { sdWizard.wizAction = null; sdWizard.mortgageAnswer = null; sdWizard.product = null; }
+      sdWizardSaveDraft(); sdWizardRenderStep();
+    });
+    var next1 = document.getElementById('sdWizNext1');
+    if (next1) next1.addEventListener('click', function(){ sdWizard.step = 2; sdWizardSaveDraft(); sdWizardRenderStep(); });
+  }
   function sdWizardRenderStep(){
     document.getElementById('sdWizardSteps').innerHTML = sdWizardStepsHtml();
     var body = document.getElementById('sdWizardBody');
     var rules = getProductRules(sdSettingsCache);
 
     if (sdWizard.step === 1) {
-      body.innerHTML =
-        '<div class="sd-card"><h2>What are we submitting?</h2>' +
-        '<div class="sd-picker" id="sdPicker">' +
-        Object.keys(rules).map(function(key){
-          var r = rules[key];
-          return '<button type="button" class="sd-pickitem' + (sdWizard.product === key ? ' selected' : '') + '" data-product="' + key + '">' + sdEsc(r.label) + (r.cutoffApplies === false ? '<span>No same-day cutoff for this type</span>' : '<span>11:00 AM cutoff applies</span>') + '</button>';
-        }).join('') +
-        '</div></div>' +
-        '<div class="sd-card" style="display:flex;justify-content:flex-end;"><button class="btn-primary" id="sdWizNext1"' + (sdWizard.product ? '' : ' disabled') + '>Continue &rarr;</button></div>';
-      document.querySelectorAll('#sdPicker [data-product]').forEach(function(b){
-        b.addEventListener('click', function(){ sdWizard.product = b.getAttribute('data-product'); sdWizardSaveDraft(); sdWizardRenderStep(); });
-      });
-      var next1 = document.getElementById('sdWizNext1');
-      if (next1) next1.addEventListener('click', function(){ sdWizard.step = 2; sdWizardSaveDraft(); sdWizardRenderStep(); });
+      body.innerHTML = sdWizardPickerHtml(rules);
+      sdWizardBindPicker(rules);
       return;
     }
 
